@@ -1,0 +1,103 @@
+﻿@{
+    ViewData["Title"] = "Login";
+}
+
+<style>
+    body, html {
+        height: 100%;
+        margin: 0;
+        background: url("/imagenes/fondoweb.jpg") no-repeat center center fixed;
+        background-size: cover;
+    }
+
+    .login-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+    }
+
+    .login-box {
+        background: rgba(255, 255, 255, 0.95);
+        padding: 40px;
+        border-radius: 20px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        max-width: 350px;
+        width: 100%;
+        text-align: center;
+    }
+
+        .login-box img {
+            width: 150px;
+            height: 150px;
+            margin-bottom: 20px;
+        }
+
+    .form-control {
+        border-radius: 30px;
+        padding: 10px 20px;
+        margin-bottom: 10px;
+    }
+
+    .btn-login {
+        background: linear-gradient(90deg, #f83600, #f9d423);
+        border: none;
+        border-radius: 30px;
+        padding: 10px 25px;
+        color: white;
+        font-weight: bold;
+    }
+
+        .btn-login:hover {
+            background: linear-gradient(90deg, #f12711, #f5af19);
+        }
+
+    .registro-link a {
+        color: #f83600;
+        font-weight: bold;
+    }
+</style>
+
+<div class="login-container">
+    <div class="login-box">
+        <img src="/imagenes/logo.png" alt="User Icon" />
+        <h3>Iniciar Sesión</h3>
+        <form asp-action="Login" method="post">
+            <input type="text" name="nombreUsuario" class="form-control" placeholder="Nombre de Usuario" required />
+            <input type="password" name="contraseña" class="form-control" placeholder="Contraseña" required />
+            <button type="submit" class="btn btn-login">Ingresar</button>
+        </form>
+
+        @if (ViewBag.Mensaje != null)
+        {
+            <div class="text-danger mt-2">@ViewBag.Mensaje</div>
+        }
+
+        <div class="registro-link mt-3">
+            ¿No tenés cuenta? <a asp-action="RegistrarCliente">Registrate como cliente</a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const registroExitoso = '@TempData["RegistroExitoso"]' === 'True';
+
+        if (registroExitoso) {
+            Swal.fire({
+                icon: 'success',
+                title: 'REGISTRO EXITOSO',
+                text: 'Bienvenido. Has sido registrado exitosamente como cliente!',
+                confirmButtonText: 'Aceptar',
+                background: '#fff3cd',
+                color: '#000',
+                customClass: {
+                    title: 'fw-bold',
+                    popup: 'border border-warning'
+                }
+            });
+        }
+    </script>
+
+    <partial name="_ValidationScriptsPartial" />
+}

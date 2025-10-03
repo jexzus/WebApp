@@ -1,0 +1,120 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - AppWeb1</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/AppWeb1.styles.css" asp-append-version="true" />
+
+    <!-- FontAwesome para íconos (si seguís usándolos en otras partes) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-yfD7UBn4p91xqzOTyMYR7Hjkg+4q6lqOZ+us2e9kHXulJ+aLr4rRJlUu1G4VtLG+aUtLcm65WSB9U1DcWFoE1g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <style>
+        body {
+            background: url('/imagenes/fondoweb.jpg') no-repeat center center fixed;
+            background-size: cover;
+            background-color: #fffbe6;
+        }
+
+        .btn-primary {
+            background-color: #ff9800;
+            border-color: #e68900;
+        }
+
+        .btn-danger {
+            background-color: #e53935;
+            border-color: #c62828;
+        }
+
+        .btn-warning {
+            background-color: #ffc107;
+            border-color: #ffb300;
+        }
+
+        .navbar {
+            background: linear-gradient(to right, #ff9800, #ff5722);
+        }
+
+            .navbar .nav-link {
+                color: #fff !important;
+                font-weight: bold;
+            }
+
+        footer {
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        /* 🔒 Estilo botón logout */
+        .logout-fab {
+            z-index: 1050;
+        }
+
+            .logout-fab img:hover {
+                transform: scale(1.1);
+                transition: transform 0.2s ease-in-out;
+            }
+    </style>
+
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    @* 🔐 Solo mostrar si hay usuario logueado *@
+    @{
+        var usuarioLogueado = Context.Session.GetString("Usuario");
+    }
+
+    @if (!string.IsNullOrEmpty(usuarioLogueado))
+    {
+        <!-- 🔒 Botón logout flotante -->
+        <div class="logout-fab position-fixed" style="top: 1px; right: 50px;">
+          <img src="~/imagenes/logout.png" alt="Salir" style="width: 45px; height: 45px; cursor: pointer;" onclick="confirmarLogout()" />
+        </div>
+    }
+
+    <header></header>
+
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2025 - Jam Burgers, Santa Rosa, La Pampa. By Raiburn Jesús (JXZ) - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- 🔒 Confirmación logout -->
+    <script>
+        function confirmarLogout() {
+            Swal.fire({
+                title: '¿Cerrar sesión?',
+                text: '¿Está seguro que desea salir?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, cerrar sesión',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                background: '#fff3cd',
+                color: '#000'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = '/Usuario/Logout';
+                }
+            });
+        }
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

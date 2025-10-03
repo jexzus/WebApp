@@ -1,0 +1,184 @@
+﻿@model AppWeb1.Models.Usuario
+@{
+    ViewData["Title"] = "Crear Administrador";
+    var admins = ViewBag.Administradores as List<AppWeb1.Models.Usuario>;
+}
+
+<h2>Crear Nuevo Administrador</h2>
+
+<form asp-action="CrearAdmin" method="post" class="mb-4">
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <div class="form-group mb-2">
+        <label asp-for="NombreUsuario" class="form-label"></label>
+        <input asp-for="NombreUsuario" class="form-control" />
+        <span asp-validation-for="NombreUsuario" class="text-danger"></span>
+    </div>
+
+    <div class="form-group mb-3">
+        <label asp-for="Contraseña" class="form-label"></label>
+        <input asp-for="Contraseña" class="form-control" type="password" />
+        <span asp-validation-for="Contraseña" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Crear Administrador</button>
+</form>
+
+<div class="mt-3">
+    <a asp-controller="Admin" asp-action="Index" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Volver al Panel
+    </a>
+</div>
+
+@if (admins != null && admins.Count > 0)
+{
+    <h3 class="mt-5">Administradores Actuales</h3>
+    <table class="table table-bordered mt-3">
+        <thead class="table-light">
+            <tr>
+                <th>Usuario</th>
+                <th>Contraseña</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var admin in admins)
+            {
+                <tr id="fila-@admin.Id">
+                    <td>
+                        <input type="text" class="form-control" id="user-@admin.Id" value="@admin.NombreUsuario" />
+                    </td>
+                    <td>
+                        <input type="text" class="form-control" id="pass-@admin.Id" value="@admin.Contraseña" />
+                    </td>
+                    <td>
+                        <button class="btn btn-success btn-sm me-1" onclick="guardarAdmin(@admin.Id)">Guardar</button>
+                        <button class="btn btn-danger btn-sm" onclick="eliminarAdmin(@admin.Id)">Eliminar</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <div id="paginacionAdmins" class="d-flex justify-content-center mt-4"></div>
+}
+else
+{
+    <p class="text-muted">No hay administradores registrados aún.</p>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    @if (TempData["AdminCreado"] != null)
+    {
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Administrador Creado',
+                text: 'El nuevo administrador fue creado exitosamente.',
+                confirmButtonText: 'Aceptar',
+                background: '#fff3cd',
+                color: '#000',
+                customClass: {
+                    title: 'fw-bold',
+                    popup: 'border border-warning'
+                }
+            });
+        </script>
+    }
+
+    <script>
+        function guardarAdmin(id) {
+            const nombreUsuario = document.getElementById(`user-${id}`).value;
+            const contraseña = document.getElementById(`pass-${id}`).value;
+
+            fetch('/Usuario/ActualizarAdmin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id, nombreUsuario, contraseña })
+            })
+            .then(r => r.json())
+            .then(data => {
+                Swal.fire({
+                    icon: data.success ? 'success' : 'error',
+                    title: data.success ? 'Actualizado' : 'Error',
+                    text: data.message,
+                    background: '#fff3cd',
+                    color: '#000',
+                    confirmButtonText: 'Aceptar'
+                });
+            });
+        }
+
+        function eliminarAdmin(id) {
+            Swal.fire({
+                title: '¿Eliminar administrador?',
+                text: 'Esta acción no se puede deshacer',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e53935',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/Usuario/EliminarAdmin?id=${id}`, {
+                        method: 'POST'
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            document.getElementById(`fila-${id}`).remove();
+                            paginateAdmins();
+                        }
+                        Swal.fire({
+                            icon: data.success ? 'success' : 'error',
+                            title: data.success ? 'Eliminado' : 'Error',
+                            text: data.message,
+                            background: '#fff3cd',
+                            color: '#000',
+                            confirmButtonText: 'Aceptar'
+                        });
+                    });
+                }
+            });
+        }
+
+        function paginateAdmins() {
+            const rows = document.querySelectorAll("table tbody tr");
+            const rowsPerPage = 10;
+            const pagination = document.getElementById("paginacionAdmins");
+
+            function showPage(page) {
+                const start = page * rowsPerPage;
+                const end = start + rowsPerPage;
+
+                rows.forEach((row, index) => {
+                    row.style.display = (index >= start && index < end) ? "" : "none";
+                });
+            }
+
+            function createPagination() {
+                pagination.innerHTML = "";
+                const totalPages = Math.ceil(rows.length / rowsPerPage);
+
+                for (let i = 0; i < totalPages; i++) {
+                    const btn = document.createElement("button");
+                    btn.textContent = i + 1;
+                    btn.className = "btn btn-sm btn-outline-warning mx-1";
+                    btn.onclick = () => showPage(i);
+                    pagination.appendChild(btn);
+                }
+
+                if (totalPages > 0) showPage(0);
+            }
+
+            createPagination();
+        }
+
+        window.addEventListener("DOMContentLoaded", paginateAdmins);
+    </script>
+}

@@ -1,0 +1,22 @@
+﻿@model AppWeb1.Models.Usuario
+@{
+    ViewData["Title"] = "Crear Admin";
+}
+
+<h2>Crear Nuevo Administrador</h2>
+
+<form asp-action="CrearAdmin" method="post">
+    <div>
+        <label>Nombre de Usuario</label>
+        <input asp-for="NombreUsuario" required />
+    </div>
+    <div>
+        <label>Contraseña</label>
+        <input asp-for="Contraseña" type="password" required />
+    </div>
+    <button type="submit">Crear Admin</button>
+</form>
+
+<p>
+    <a asp-action="Login">Volver</a>
+</p>

@@ -1,0 +1,52 @@
+﻿@model AppWeb1.Models.Producto
+
+@{
+    ViewData["Title"] = "Editar Producto";
+}
+
+<h2>Editar Producto</h2>
+
+<form asp-action="Edit" method="post" enctype="multipart/form-data">
+    <input type="hidden" asp-for="IdProducto" />
+
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <div class="form-group mb-3">
+        <label asp-for="NombreProducto" class="form-label"></label>
+        <input asp-for="NombreProducto" class="form-control" />
+        <span asp-validation-for="NombreProducto" class="text-danger"></span>
+    </div>
+
+    <div class="form-group mb-3">
+        <label asp-for="Descripcion" class="form-label"></label>
+        <textarea asp-for="Descripcion" class="form-control"></textarea>
+        <span asp-validation-for="Descripcion" class="text-danger"></span>
+    </div>
+
+    <div class="form-group mb-3">
+        <label asp-for="Precio" class="form-label"></label>
+        <input asp-for="Precio" class="form-control" />
+        <span asp-validation-for="Precio" class="text-danger"></span>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.Imagen))
+    {
+        <div class="form-group mb-3">
+            <label class="form-label">Imagen actual:</label><br />
+            <img src="~/imagenes/@Model.Imagen" alt="Imagen actual" class="img-thumbnail" style="max-height:150px;" />
+        </div>
+    }
+
+    <div class="form-group mb-4">
+        <label asp-for="ImagenArchivo" class="form-label">Cambiar imagen</label>
+        <input asp-for="ImagenArchivo" type="file" class="form-control" accept=".jpg,.jpeg,.png,.gif" />
+        <span asp-validation-for="ImagenArchivo" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-success">Guardar cambios</button>
+    <a asp-action="GestionCatalogo" class="btn btn-secondary">Cancelar</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

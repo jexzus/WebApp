@@ -1,0 +1,38 @@
+﻿@model AppWeb1.Models.Pedido
+
+@{
+    ViewData["Title"] = "Detalle del Pedido";
+}
+
+<h2>Detalle del Pedido #@Model.NumPedido</h2>
+
+<p><strong>Cliente:</strong> @Model.IdClienteNavigation?.Nombre @Model.IdClienteNavigation?.Apellido</p>
+<p><strong>Fecha:</strong> @Model.FechaPedido?.ToString("dd/MM/yyyy HH:mm")</p>
+<p><strong>Estado:</strong> @Model.EstadoPedido</p>
+<p><strong>Observaciones:</strong> @Model.Observaciones</p>
+<p><strong>Monto Total:</strong> @Model.MontoTotal?.ToString("C")</p>
+
+<h4>Productos</h4>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Precio Unitario</th>
+            <th>Subtotal</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.DetallePedidos)
+        {
+            <tr>
+                <td>@item.IdProductoNavigation?.NombreProducto</td>
+                <td>@item.Cantidad</td>
+                <td>@item.PrecioUnitario ?? 0).ToString("C")</td>
+                <td>@item.Subtotal.ToString("C")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<p><a asp-action="Index">Volver al listado</a></p>

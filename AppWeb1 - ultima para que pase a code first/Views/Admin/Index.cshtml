@@ -1,0 +1,38 @@
+﻿@{
+    ViewData["Title"] = "Panel de Administración";
+}
+
+<div class="d-flex justify-content-center align-items-center" style="min-height: 85vh;">
+    <div class="w-100" style="max-width: 700px;">
+
+        <h2 class="text-center mb-5 fw-bold">Panel de Administración</h2>
+
+        <!-- Botón 1: Catálogo -->
+        <div class="card mb-4 shadow" style="border-left: 8px solid #e53935;">
+            <div class="card-body">
+                <h4 class="fw-bold text-danger">Catálogo de Productos</h4>
+                <p>Administrar productos del sistema (crear, editar, eliminar).</p>
+                <a asp-action="GestionCatalogo" class="btn btn-warning fw-bold">Gestión de Catálogo</a>
+            </div>
+        </div>
+
+        <!-- Botón 2: Pedidos -->
+        <div class="card mb-4 shadow" style="border-left: 8px solid #ffc107;">
+            <div class="card-body">
+                <h4 class="fw-bold text-warning">Gestión de Pedidos</h4>
+                <p>Ver y modificar el estado de los pedidos de los clientes.</p>
+                <a asp-action="GestionPedidos" class="btn btn-danger fw-bold">Ver Pedidos</a>
+            </div>
+        </div>
+
+        <!-- Botón 3: Administradores -->
+        <div class="card mb-4 shadow" style="border-left: 8px solid orange;">
+            <div class="card-body">
+                <h4 class="fw-bold text-dark">Gestión de Administradores</h4>
+                <p>Administrar permisos de administradores.</p>
+                <a asp-controller="Usuario" asp-action="CrearAdmin" class="btn btn-dark fw-bold">Gestionar Administradores</a>
+            </div>
+        </div>
+
+    </div>
+</div>

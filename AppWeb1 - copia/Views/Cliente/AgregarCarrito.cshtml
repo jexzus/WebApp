@@ -1,0 +1,20 @@
+﻿@model AppWeb1.Models.Producto
+@{
+    ViewData["Title"] = "Agregar al Carrito";
+}
+
+<h2>Agregar al Carrito</h2>
+
+<form asp-action="AgregarCarrito" method="post">
+    <input type="hidden" name="idProducto" value="@Model.IdProducto" />
+    <p><strong>Producto:</strong> @Model.NombreProducto</p>
+    <p><strong>Descripción:</strong> @Model.Descripcion</p>
+    <p><strong>Precio:</strong> @Model.Precio?.ToString("C")</p>
+
+    <label>Cantidad:</label>
+    <input type="number" name="cantidad" min="1" value="1" required />
+
+    <br /><br />
+    <button type="submit">Agregar</button>
+    <a asp-action="Catalogo">Volver al catálogo</a>
+</form>
