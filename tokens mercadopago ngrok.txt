@@ -1,0 +1,16 @@
+
+PS C:\Users\Jesus> cd "C:\Users\Jesus\Documents\ITES\3ro\PROGRAMACIÓN III WEB\WebApp\AppWeb1"
+>>
+PS C:\Users\Jesus\Documents\ITES\3ro\PROGRAMACIÓN III WEB\WebApp\AppWeb1> dotnet user-secrets init
+>>
+Set UserSecretsId to '72b0c5b1-0504-4bdf-8c57-a697051ab496' for MSBuild project 'C:\Users\Jesus\Documents\ITES\3ro\PROGRAMACIÓN III WEB\WebApp\AppWeb1\AppWeb1.csproj'.
+PS C:\Users\Jesus\Documents\ITES\3ro\PROGRAMACIÓN III WEB\WebApp\AppWeb1> dotnet user-secrets set "MercadoPago:PublicKey" "APP_USR-4d175f7d-5be8-4953-a7c4-9ea6e5854d22"
+>> dotnet user-secrets set "MercadoPago:AccessToken" "APP_USR-1323889252252761-100618-5dfa45bddb7732cb0e06db5c7e8deccb-2908928033"
+>> dotnet user-secrets set "MercadoPago:BasePublicUrl" "https://abcd1234.ngrok.io"
+>>
+Successfully saved MercadoPago:PublicKey to the secret store.
+Successfully saved MercadoPago:AccessToken to the secret store.
+Successfully saved MercadoPago:BasePublicUrl to the secret store.
+PS C:\Users\Jesus\Documents\ITES\3ro\PROGRAMACIÓN III WEB\WebApp\AppWeb1> dotnet user-secrets set "MercadoPago:BasePublicUrl" "https://uncorrectable-alyson-about.ngrok-free.dev"
+Successfully saved MercadoPago:BasePublicUrl to the secret store.
+PS C:\Users\Jesus\Documents\ITES\3ro\PROGRAMACIÓN III WEB\WebApp\AppWeb1>

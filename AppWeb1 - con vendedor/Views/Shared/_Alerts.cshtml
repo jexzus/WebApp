@@ -1,0 +1,16 @@
+﻿@* Views/Shared/_Alerts.cshtml *@
+@* Muestra TempData["Success"] y TempData["Error"] con Bootstrap *@
+@if (TempData["Success"] is string s && !string.IsNullOrWhiteSpace(s))
+{
+    <div class="alert alert-success alert-dismissible fade show mt-2" role="alert">
+        @s
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    </div>
+}
+@if (TempData["Error"] is string e && !string.IsNullOrWhiteSpace(e))
+{
+    <div class="alert alert-danger alert-dismissible fade show mt-2" role="alert">
+        @e
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    </div>
+}

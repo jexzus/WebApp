@@ -1,0 +1,70 @@
+#include <Arduino.h>
+#include <Stepper.h>
+
+/* ---------- Pines (Arduino -> L293D) ---------- */
+const int PIN_IN1 = 8;   // L293D IN1 -> OUT1 -> motor 'a' (A+)
+const int PIN_IN2 = 9;   // L293D IN2 -> OUT2 -> motor 'c' (A-)
+const int PIN_IN3 = 10;  // L293D IN3 -> OUT3 -> motor 'b' (B+)
+const int PIN_IN4 = 11;  // L293D IN4 -> OUT4 -> motor 'd' (B-)
+
+/* ---------- Cinemática ---------- */
+/* Tu modelo/calibración: cada “estado/paso” equivale a este ángulo: */
+const float STEP_ANGLE_DEG = 1.5f;     // <— usa tu valor calibrado
+/* La librería necesita “steps per rev” solo para el cálculo de RPM.
+   Lo estimamos con redondeo; no afecta la precisión del movimiento,
+   porque abajo convertimos grados->pasos con STEP_ANGLE_DEG.           */
+const int STEPS_PER_REV = (int)(120.0f / STEP_ANGLE_DEG + 0.5f);
+
+/* ---------- Motor Stepper ---------- */
+Stepper motor(STEPS_PER_REV, PIN_IN1, PIN_IN2, PIN_IN3, PIN_IN4);
+
+/* ---------- Estado actual en pasos (0 = casa) ---------- */
+long pos_steps = 0;
+
+/* ---------- Utilidades ---------- */
+long degToSteps(float deg) {
+  // convierte un ángulo absoluto a pasos absolutos (redondeando)
+  return (long) lround(deg / STEP_ANGLE_DEG);
+}
+
+float stepsToDeg(long steps) {
+  return steps * STEP_ANGLE_DEG;
+}
+
+void goToDeg(float target_deg) {
+  long target_steps = degToSteps(target_deg);
+  long delta = target_steps - pos_steps;  // pasos relativos a mover
+  if (delta != 0) {
+    motor.step(delta);                    // bloqueante; mueve exactamente 'delta'
+    pos_steps += delta;
+  }
+  // Reporte serial (1 decimal)
+  float ang = stepsToDeg(pos_steps);
+  long tenths = lround(ang * 10.0f);
+  Serial.print("Detenido en ");
+  Serial.print(tenths / 10); Serial.print(".");
+  Serial.print(labs(tenths % 10));
+}
+
+void setup() {
+  Serial.begin(9600);
+  Serial.println("Stepper.h + L293D (bipolar), usando STEP_ANGLE calibrado");
+
+  /* Sugerencia de velocidad: la librería usa RPM con base STEPS_PER_REV.
+     Con tu Proteus, 6–20 RPM suele ir bien (ajustá si ves saltos).     */
+  motor.setSpeed(12);  // RPM
+}
+
+void loop() {
+  Serial.println("Moviendo Izquierda -120...");
+  goToDeg(-120.0f);
+  delay(2000);
+
+  Serial.println("Moviendo Derecha 60 (a -60)...");
+  goToDeg(-60.0f);
+  delay(1000);
+
+  Serial.println("Volviendo a CASA (0)...");
+  goToDeg(0.0f);
+  delay(5000);
+}

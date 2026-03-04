@@ -1,0 +1,16 @@
+﻿@{
+    ViewData["Title"] = "Acceso denegado";
+    var msg = ViewBag.Message as string ?? "Acceso denegado.";
+    var area = ViewBag.ReturnArea as string ?? "";
+    var ctrl = ViewBag.ReturnController as string ?? "Home";
+    var act = ViewBag.ReturnAction as string ?? "Index";
+}
+<div class="container py-5">
+    <div class="alert alert-warning border border-danger">
+        <h4 class="mb-2">No tienes permisos suficientes</h4>
+        <p class="mb-0">@msg</p>
+    </div>
+    <a asp-area="@area" asp-controller="@ctrl" asp-action="@act" class="btn btn-secondary">
+        Volver al panel
+    </a>
+</div>

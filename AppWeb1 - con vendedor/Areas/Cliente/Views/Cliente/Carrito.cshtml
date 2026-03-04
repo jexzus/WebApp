@@ -1,0 +1,154 @@
+﻿@model List<AppWeb1.Models.DetallePedido>
+@using System.Linq
+@{
+    ViewData["Title"] = "Carrito de Compras";
+}
+
+<h2>Carrito de Compras</h2>
+
+@if (Model != null && Model.Any())
+{
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Precio Unitario</th>
+                    <th>Cantidad</th>
+                    <th>Subtotal</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < Model.Count; i++)
+                {
+                    <tr>
+                        <td>@Model[i].IdProductoNavigation?.NombreProducto</td>
+                        <td>@Model[i].PrecioUnitario.ToString("C")</td>
+                        <td>@Model[i].Cantidad</td>
+                        <td>@((Model[i].PrecioUnitario * Model[i].Cantidad).ToString("C"))</td>
+                        <td>
+                            <button class="btn btn-danger btn-sm" onclick="confirmarEliminacion(@i)">Eliminar</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr class="table-info">
+                    <th colspan="3">Total:</th>
+                    <th>@Model.Sum(x => x.PrecioUnitario * x.Cantidad).ToString("C")</th>
+                    <th></th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <div class="mt-4">
+        <form asp-action="ConfirmarPedido" method="post">
+            @Html.AntiForgeryToken()
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="tipoEntrega">Tipo de Entrega:</label>
+                        <select name="tipoEntrega" id="tipoEntrega" class="form-control" required>
+                            <option value="">Seleccione...</option>
+                            <option value="Domicilio">A Domicilio</option>
+                            <option value="Recoger">Recoger en Tienda</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="observaciones">Observaciones:</label>
+                        <textarea name="observaciones" id="observaciones" class="form-control" rows="3" placeholder="Instrucciones especiales (opcional)"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between">
+                <a asp-action="Catalogo" class="btn btn-secondary">Seguir Comprando</a>
+                <button type="submit" class="btn btn-success">Confirmar Pedido</button>
+            </div>
+        </form>
+    </div>
+
+    <partial name="_ModalConfirmacionGlobal" />
+
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div class="toast align-items-center text-bg-success border-0" role="alert" id="toastEliminado" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" id="toastEliminadoMensaje">Producto eliminado</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">
+        <h4>Tu carrito está vacío</h4>
+        <p>No tienes productos en tu carrito de compras.</p>
+        <a asp-action="Catalogo" class="btn btn-primary">Ir al Catálogo</a>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        function mostrarToast(mensaje) {
+            document.getElementById("toastEliminadoMensaje").innerText = mensaje;
+            const toast = new bootstrap.Toast(document.getElementById("toastEliminado"));
+            toast.show();
+        }
+
+        function confirmarEliminacion(indice) {
+            document.getElementById('tituloConfirmacion').innerText = 'Eliminar producto';
+            document.getElementById('mensajeConfirmacion').innerText = '¿Está seguro que desea eliminar este producto del carrito?';
+            const modal = new bootstrap.Modal(document.getElementById('modalConfirmacion'));
+            modal.show();
+
+            document.getElementById('btnConfirmarAccion').onclick = function () {
+                const form = document.createElement('form');
+                form.method = 'post';
+                form.action = '/Cliente/EliminarDelCarrito';
+
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'indice';
+                input.value = indice;
+
+                const token = document.querySelector('input[name="__RequestVerificationToken"]');
+                if (token) {
+                    const tokenInput = document.createElement('input');
+                    tokenInput.type = 'hidden';
+                    tokenInput.name = '__RequestVerificationToken';
+                    tokenInput.value = token.value;
+                    form.appendChild(tokenInput);
+                }
+
+                form.appendChild(input);
+                document.body.appendChild(form);
+                form.submit();
+
+                bootstrap.Modal.getInstance(document.getElementById('modalConfirmacion')).hide();
+                mostrarToast("Producto eliminado del carrito");
+            }
+        }
+
+        // 🟡 Mostrar alerta de pedido confirmado si aplica
+        const pedidoExitoso = '@TempData["PedidoExitoso"]' === 'True';
+
+        if (pedidoExitoso) {
+            Swal.fire({
+                icon: 'success',
+                title: 'PEDIDO CONFIRMADO',
+                text: 'Su pedido ha sido generado con éxito.',
+                confirmButtonText: 'Aceptar',
+                background: '#ff8c00',
+                color: '#000',
+                customClass: {
+                    title: 'fw-bold',
+                    popup: 'border border-warning'
+                }
+            });
+        }
+    </script>
+}

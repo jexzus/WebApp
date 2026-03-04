@@ -1,0 +1,423 @@
+/* =========================================================
+   ESTILOS GLOBALES / LAYOUT
+   ========================================================= */
+
+body {
+    background: url('/imagenes/fondoweb.jpg') no-repeat center center fixed;
+    background-size: cover;
+    background-color: #fffbe6;
+}
+
+/* Botones primarios personalizados */
+.btn-primary {
+    background-color: #ff9800;
+    border-color: #e68900;
+}
+
+    .btn-primary:hover,
+    .btn-primary:focus {
+        background-color: #e68900;
+        border-color: #cc7a00;
+    }
+
+.btn-danger {
+    background-color: #e53935;
+    border-color: #c62828;
+}
+
+    .btn-danger:hover,
+    .btn-danger:focus {
+        background-color: #c62828;
+        border-color: #b71c1c;
+    }
+
+.btn-warning {
+    background-color: #ffc107;
+    border-color: #ffb300;
+}
+
+    .btn-warning:hover,
+    .btn-warning:focus {
+        background-color: #ffb300;
+        border-color: #ffa000;
+    }
+
+/* Navbar */
+.navbar {
+    background: linear-gradient(to right, #ff9800, #ff5722);
+}
+
+    .navbar .nav-link {
+        color: #fff !important;
+        font-weight: bold;
+    }
+
+        .navbar .nav-link:hover {
+            opacity: 0.8;
+        }
+
+/* Footer */
+footer {
+    background: rgba(255, 255, 255, 0.7);
+}
+
+/* Botón flotante de logout */
+.logout-fab {
+    position: fixed;
+    top: 1px;
+    right: 50px;
+    z-index: 1050;
+}
+
+    .logout-fab img {
+        width: 45px;
+        height: 45px;
+        cursor: pointer;
+        transition: transform 0.2s ease-in-out;
+    }
+
+        .logout-fab img:hover {
+            transform: scale(1.1);
+        }
+
+/* =========================================================
+   CLIENTE (Areas/Cliente/Views/*)
+   ========================================================= */
+
+.cliente-page {
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 1rem;
+}
+
+/* ---------- Catálogo ---------- */
+.catalogo-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 1rem;
+}
+
+@media (max-width: 575.98px) {
+    .catalogo-grid > * {
+        grid-column: span 12;
+    }
+}
+
+@media (min-width: 576px) and (max-width: 991.98px) {
+    .catalogo-grid > * {
+        grid-column: span 6;
+    }
+}
+
+@media (min-width: 992px) {
+    .catalogo-grid > * {
+        grid-column: span 4;
+    }
+}
+
+/* Tarjeta de producto */
+.product-card {
+    border: 1px solid rgba(0,0,0,.08);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 4px 14px rgba(0,0,0,.05);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.product-card__img {
+    width: 100%;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+    background: #f7f7f7;
+    display: block;
+}
+
+.product-card__body {
+    padding: .9rem 1rem 1rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+    flex: 1 1 auto;
+}
+
+.product-card__title {
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0;
+}
+
+.product-card__desc {
+    color: #666;
+    font-size: .95rem;
+    margin: 0;
+}
+
+.product-card__price {
+    font-weight: 800;
+    font-size: 1.05rem;
+    margin-top: .25rem;
+}
+
+.product-card__actions {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin-top: .6rem;
+}
+
+/* Stepper de cantidad */
+.qty {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid rgba(0,0,0,.15);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+    .qty input[type="number"] {
+        width: 64px;
+        border: 0;
+        text-align: center;
+        padding: .4rem .25rem;
+        -moz-appearance: textfield;
+    }
+
+        .qty input[type="number"]::-webkit-inner-spin-button,
+        .qty input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+    .qty button,
+    .qty__minus,
+    .qty__plus {
+        border: 0;
+        background: #f5f5f5;
+        padding: .35rem .6rem;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+        .qty button:focus,
+        .qty__minus:focus,
+        .qty__plus:focus {
+            outline: none;
+        }
+
+        .qty button:hover,
+        .qty__minus:hover,
+        .qty__plus:hover {
+            background: #e0e0e0;
+        }
+
+.btn-add-cart {
+    border-radius: 999px;
+    font-weight: 700;
+    padding: .45rem .9rem;
+}
+
+/* ---------- Badge carrito ---------- */
+.cart-button {
+    position: relative;
+}
+
+.cart-badge {
+    position: absolute;
+    top: -6px;
+    right: -8px;
+    background: #dc3545;
+    color: #fff;
+    font-size: .75rem;
+    line-height: 1;
+    padding: .18rem .4rem;
+    border-radius: 999px;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* ---------- Carrito ---------- */
+.carrito-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(0,0,0,.05);
+}
+
+    .carrito-table th,
+    .carrito-table td {
+        padding: .75rem .9rem;
+        border-bottom: 1px solid rgba(0,0,0,.06);
+        vertical-align: middle;
+    }
+
+    .carrito-table th {
+        background: #fafafa;
+        font-weight: 700;
+    }
+
+.carrito-total {
+    text-align: right;
+    font-size: 1.05rem;
+    font-weight: 800;
+}
+
+.carrito-table img.img-thumbnail {
+    max-height: 60px;
+    width: auto;
+    border-radius: 8px;
+}
+
+@media (max-width: 575.98px) {
+    .carrito-table thead {
+        display: none;
+    }
+
+    .carrito-table tr {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        padding: .5rem .75rem;
+        border-bottom: 1px solid rgba(0,0,0,.06);
+    }
+
+    .carrito-table td {
+        border: 0;
+        padding: .35rem 0;
+    }
+
+        .carrito-table td[data-label]::before {
+            content: attr(data-label) ": ";
+            font-weight: 700;
+            color: #444;
+        }
+}
+
+/* ---------- Estado de Pedido ---------- */
+.estado-pill {
+    display: inline-block;
+    padding: .25rem .6rem;
+    border-radius: 999px;
+    font-size: .85rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.estado--pendiente {
+    background: #fff3cd;
+    color: #7a6300;
+}
+
+.estado--preparacion {
+    background: #cfe2ff;
+    color: #084298;
+}
+
+.estado--enviado {
+    background: #d1e7dd;
+    color: #0f5132;
+}
+
+.estado--cancelado {
+    background: #f8d7da;
+    color: #842029;
+}
+
+/* ---------- Callouts ---------- */
+.alert-soft {
+    border: 1px solid rgba(0,0,0,.06);
+    background: #fffef7;
+    color: #5c4b00;
+    border-radius: 12px;
+    padding: .8rem 1rem;
+}
+
+.btn-cta {
+    border-radius: 999px;
+    font-weight: 700;
+    padding: .55rem 1rem;
+}
+
+.gap-2 {
+    gap: .5rem;
+}
+
+/* =========================================================
+   AUTH (Views/Usuario/*)
+   ========================================================= */
+
+.auth-page {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 2rem 1rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 50%, #f8f9ff 100%);
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 560px;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,.06);
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.08);
+    padding: 1.5rem;
+}
+
+@media (min-width: 576px) {
+    .auth-card {
+        padding: 2rem;
+    }
+}
+
+.auth-card__header {
+    text-align: center;
+    margin-bottom: 1.25rem;
+}
+
+.auth-title {
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    margin: 0 0 .25rem 0;
+}
+
+.auth-subtitle {
+    color: #6c757d;
+    margin: 0;
+}
+
+.auth-form .form-label {
+    margin-bottom: .35rem;
+}
+
+.btn-auth {
+    border-radius: 12px;
+    font-weight: 700;
+    padding: .75rem 1rem;
+}
+
+.auth-footer {
+    text-align: center;
+}
+
+    .auth-footer a {
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+
+.input-group-lg > .form-control,
+.form-control.form-control-lg {
+    border-radius: 12px;
+}
+
+.btn-outline-secondary i {
+    pointer-events: none;
+}

@@ -1,0 +1,51 @@
+﻿@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="login-container">
+    <div class="login-box">
+        <img src="/imagenes/logo.png" alt="User Icon" class="login-logo" />
+        <h3>Iniciar Sesión</h3>
+        <form asp-action="Login" method="post">
+            @Html.AntiForgeryToken()
+            <input type="text" name="nombreUsuario" class="form-control" placeholder="Nombre de Usuario" required />
+            <input type="password" name="contraseña" class="form-control" placeholder="Contraseña" required />
+            <button type="submit" class="btn btn-login">Ingresar</button>
+        </form>
+
+        <div class="registro-link mt-3 text-center">
+            ¿No tenés cuenta? <a asp-action="PreRegistro">Registrate como cliente</a>
+        </div>
+        <div class="registro-link mt-2 text-center">
+            <a href="#">Recuperar contraseña</a>
+        </div>
+    </div>
+</div>
+
+@* Modal global opcional *@
+@await Html.PartialAsync("~/Views/Shared/_ModalExitoGlobal.cshtml")
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        (function () {
+            // Si usás estos TempData específicos de registro, los mantenemos (no son Success/Error globales)
+            var registroExitoso = '@(TempData["RegistroExitoso"] as bool? ?? false)' === 'True';
+            if (registroExitoso && window.Swal) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '@Html.Raw(TempData["RegistroExitosoTitulo"] ?? "Registro exitoso")',
+                    text: '@Html.Raw(TempData["RegistroExitosoMensaje"] ?? "Tu cuenta fue creada correctamente.")',
+                    confirmButtonText: 'Aceptar',
+                    background: '#fff3cd',
+                    color: '#000',
+                    customClass: {
+                        title: 'fw-bold',
+                        popup: 'border border-warning'
+                    }
+                });
+            }
+        })();
+    </script>
+    <partial name="_ValidationScriptsPartial" />
+}

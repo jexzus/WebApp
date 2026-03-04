@@ -1,0 +1,115 @@
+﻿@model AppWeb1.ViewModels.RegistrarClienteVM
+@{
+    ViewData["Title"] = "Registrar Cliente";
+    bool preReg = (ViewBag.PreReg as bool?) ?? false;
+}
+
+<div class="auth-page">
+    <div class="auth-card shadow">
+        <div class="auth-card__header">
+            <h1 class="auth-title">Crear cuenta</h1>
+            <p class="auth-subtitle">Completá tus datos para finalizar el registro.</p>
+        </div>
+
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger">@TempData["Error"]</div>
+        }
+
+        <form asp-controller="Usuario" asp-action="RegistrarCliente" method="post" class="auth-form" novalidate>
+            @Html.AntiForgeryToken()
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="Nombre" class="form-label fw-semibold"></label>
+                    <input asp-for="Nombre" class="form-control form-control-lg" />
+                    <span asp-validation-for="Nombre" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Apellido" class="form-label fw-semibold"></label>
+                    <input asp-for="Apellido" class="form-control form-control-lg" />
+                    <span asp-validation-for="Apellido" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="NombreUsuario" class="form-label fw-semibold"></label>
+                    <input asp-for="NombreUsuario" class="form-control form-control-lg" />
+                    <span asp-validation-for="NombreUsuario" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="NumTelefono" class="form-label fw-semibold"></label>
+                    <input asp-for="NumTelefono" class="form-control form-control-lg" />
+                    <span asp-validation-for="NumTelefono" class="text-danger"></span>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="Domicilio" class="form-label fw-semibold"></label>
+                    <input asp-for="Domicilio" class="form-control form-control-lg" />
+                    <span asp-validation-for="Domicilio" class="text-danger"></span>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="Email" class="form-label fw-semibold">Email</label>
+                    <input asp-for="Email" class="form-control form-control-lg" readonly="@preReg" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                    @if (preReg)
+                    {
+                        <div class="form-text">Este email proviene del pre-registro verificado.</div>
+                    }
+                </div>
+
+                @if (!preReg)
+                {
+                    <div class="col-md-6">
+                        <label asp-for="Contraseña" class="form-label fw-semibold"></label>
+                        <div class="input-group input-group-lg">
+                            <input asp-for="Contraseña" type="password" class="form-control" minlength="6" />
+                            <button type="button" class="btn btn-outline-secondary" data-toggle-pass="[name='Contraseña']">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="Contraseña" class="text-danger"></span>
+                        <div class="form-text">Mínimo 6 caracteres.</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="ConfirmarContraseña" class="form-label fw-semibold"></label>
+                        <div class="input-group input-group-lg">
+                            <input asp-for="ConfirmarContraseña" type="password" class="form-control" minlength="6" />
+                            <button type="button" class="btn btn-outline-secondary" data-toggle-pass="[name='ConfirmarContraseña']">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="ConfirmarContraseña" class="text-danger"></span>
+                    </div>
+                }
+
+                <div class="col-12 mt-2">
+                    <button type="submit" class="btn btn-success btn-lg w-100 btn-auth">Crear cuenta</button>
+                </div>
+
+                <div class="col-12 auth-footer mt-2">
+                    <a asp-controller="Usuario" asp-action="Login" class="link-secondary">¿Ya tenés cuenta? Iniciar sesión</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.querySelectorAll('[data-toggle-pass]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const sel = btn.getAttribute('data-toggle-pass');
+                const input = document.querySelector(sel);
+                if (!input) return;
+                input.type = input.type === 'password' ? 'text' : 'password';
+            });
+        });
+    </script>
+}

@@ -1,0 +1,85 @@
+﻿@{
+    ViewData["Title"] = "Confirmar Pre-Registro";
+    var email = (ViewBag.Email as string) ?? "";
+    var readonlyAttr = string.IsNullOrWhiteSpace(email) ? "" : "readonly";
+}
+
+<div class="auth-page">
+    <div class="auth-card shadow">
+        <div class="auth-card__header">
+            <h1 class="auth-title">Confirmar Pre-Registro</h1>
+            <p class="auth-subtitle">Ingresá el código que te enviamos y definí tu contraseña.</p>
+        </div>
+
+        <form asp-controller="Usuario" asp-action="ConfirmarPreRegistro" method="post" novalidate class="auth-form">
+            @Html.AntiForgeryToken()
+
+            <div class="mb-3">
+                <label for="Email" class="form-label fw-semibold">Email</label>
+                <input type="email" id="Email" name="Email"
+                       value="@email"
+                       class="form-control form-control-lg"
+                       placeholder="tucorreo@ejemplo.com" @readonlyAttr />
+            </div>
+
+            <div class="mb-3">
+                <label for="Codigo" class="form-label fw-semibold">Código de verificación</label>
+                <input type="text" id="Codigo" name="Codigo" class="form-control form-control-lg" placeholder="Ej: 834921" required />
+            </div>
+
+            <div class="mb-3 position-relative">
+                <label for="Password" class="form-label fw-semibold">Contraseña</label>
+                <div class="input-group input-group-lg">
+                    <input type="password" id="Password" name="Contraseña" class="form-control" minlength="6" required />
+                    <button type="button" class="btn btn-outline-secondary" data-toggle-pass="#Password" aria-label="Mostrar/ocultar contraseña">
+                        <i class="fa fa-eye"></i>
+                    </button>
+                </div>
+                <div class="form-text">Mínimo 6 caracteres.</div>
+            </div>
+
+            <div class="mb-4 position-relative">
+                <label for="ConfirmPassword" class="form-label fw-semibold">Confirmar contraseña</label>
+                <div class="input-group input-group-lg">
+                    <input type="password" id="ConfirmPassword" name="ConfirmarContraseña" class="form-control" minlength="6" required />
+                    <button type="button" class="btn btn-outline-secondary" data-toggle-pass="#ConfirmPassword" aria-label="Mostrar/ocultar confirmación">
+                        <i class="fa fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-success btn-lg w-100 btn-auth">Validar y continuar</button>
+
+            <div class="auth-footer mt-3 d-flex justify-content-between">
+                <form asp-controller="Usuario" asp-action="ReenviarCodigo" method="post">
+                    @Html.AntiForgeryToken()
+                    <button class="btn btn-link p-0">Reenviar código</button>
+                </form>
+                <a asp-controller="Usuario" asp-action="Login" class="link-secondary">Volver al login</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelector('form.auth-form')?.addEventListener('submit', e => {
+            const btn = e.target.querySelector('button[type="submit"]');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Validando...';
+            }
+        });
+        document.querySelectorAll('[data-toggle-pass]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const sel = btn.getAttribute('data-toggle-pass');
+                const input = document.querySelector(sel);
+                if (!input) return;
+                input.type = input.type === 'password' ? 'text' : 'password';
+                const icon = btn.querySelector('i');
+                if (icon) icon.classList.toggle('fa-eye-slash');
+            });
+        });
+    </script>
+    <partial name="_ValidationScriptsPartial" />
+}

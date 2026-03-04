@@ -1,0 +1,68 @@
+﻿@model AppWeb1.ViewModels.PreRegistroVM
+@{
+    ViewData["Title"] = "Pre-Registro";
+}
+
+<div class="auth-page">
+    <div class="auth-card shadow">
+        <div class="auth-card__header">
+            <h1 class="auth-title">Pre-Registro</h1>
+            <p class="auth-subtitle">Ingresá tu email para recibir el código de acceso.</p>
+        </div>
+
+        @* Errores de validación del modelo (no TempData) *@
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger">
+                <ul class="mb-0">
+                    @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@error.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        }
+
+        <form asp-controller="Usuario" asp-action="PreRegistro" method="post" class="auth-form">
+            @Html.AntiForgeryToken()
+
+            <div class="mb-4">
+                <label for="Email" class="form-label fw-semibold">Email</label>
+                <input type="email"
+                       id="Email"
+                       name="Email"
+                       asp-for="Email"
+                       class="form-control form-control-lg @(ViewData.ModelState["Email"]?.Errors.Count > 0 ? "is-invalid" : "")"
+                       placeholder="tucorreo@ejemplo.com"
+                       required
+                       autofocus />
+                <span asp-validation-for="Email" class="text-danger"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg w-100 btn-auth">
+                Enviar código
+            </button>
+
+            <div class="auth-footer mt-3 text-center">
+                <p class="mb-0">
+                    ¿Ya tenés cuenta?
+                    <a asp-controller="Usuario" asp-action="Login" class="link-primary">Iniciar sesión</a>
+                </p>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Deshabilitar botón después del envío para evitar doble submit
+        document.querySelector('form.auth-form')?.addEventListener('submit', function (e) {
+            const btn = this.querySelector('button[type="submit"]');
+            if (btn && !btn.disabled) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enviando...';
+            }
+        });
+    </script>
+    <partial name="_ValidationScriptsPartial" />
+}

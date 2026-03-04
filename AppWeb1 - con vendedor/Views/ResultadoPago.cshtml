@@ -1,0 +1,16 @@
+﻿@model AppWeb1.Models.Pedido
+@{
+    ViewData["Title"] = "Resultado del Pago";
+}
+<div class="container py-4">
+    <h2>Resultado del pago</h2>
+    <p>Pedido N° <strong>@Model.NumPedido</strong></p>
+    <p>Estado de pago en nuestro sistema: <strong>@Model.EstadoPago</strong></p>
+    <p>
+        Si realizaste el pago recién, puede demorar unos segundos en verse como
+        <strong>aprobado</strong>. Actualizá la página en unos instantes.
+    </p>
+    <a class="btn btn-primary" asp-area="Cliente" asp-controller="Cliente" asp-action="EstadoPedido">
+        Ver mis pedidos
+    </a>
+</div>

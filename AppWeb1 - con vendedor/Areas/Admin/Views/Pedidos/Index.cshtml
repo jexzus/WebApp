@@ -1,0 +1,145 @@
+﻿@model List<AppWeb1.Models.Pedido>
+@{
+    ViewData["Title"] = "Gestión de Pedidos";
+    var pedidosOrdenados = Model
+        .OrderBy(p => p.EstadoPedido == "Entregado" ? 1 : 0)
+        .ThenByDescending(p => p.FechaPedido)
+        .ToList();
+}
+
+@section Styles {
+    <style>
+        .fila-entregado {
+            background-color: #e6ffe6 !important;
+        }
+
+        .btn-imprimir {
+            margin-right: 0.5rem;
+        }
+
+        @@media print {
+            body * {
+                visibility: hidden;
+            }
+
+            #printArea, #printArea * {
+                visibility: visible;
+            }
+
+            #printArea {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+}
+
+<h2 class="mb-4">Gestión de Pedidos</h2>
+
+<div class="d-flex justify-content-between align-items-center mb-3 no-print">
+    <div>
+        <button class="btn btn-warning btn-imprimir" onclick="imprimirTabla()">
+            <i class="fas fa-print"></i> Imprimir
+        </button>
+        <form method="post" asp-action="DescargarExcel" class="d-inline">
+            <button class="btn btn-success" type="submit">
+                <i class="fas fa-file-excel"></i> Exportar Excel
+            </button>
+        </form>
+    </div>
+    <a asp-area="Admin" asp-controller="Home" asp-action="Index" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Volver al Panel
+    </a>
+</div>
+
+<div class="mb-3 no-print">
+    <label for="filtroEstado" class="form-label">Filtrar por estado:</label>
+    <select id="filtroEstado" class="form-select" multiple>
+        <option value="Pendiente" selected>Pendiente</option>
+        <option value="En preparación">En preparación</option>
+        <option value="En reparto">En reparto</option>
+        <option value="Entregado">Entregado</option>
+    </select>
+    <small class="form-text text-muted">Mantén Ctrl/Cmd presionado para seleccionar múltiples estados</small>
+</div>
+
+<div class="mb-3 no-print">
+    <label for="buscador" class="form-label">Buscar:</label>
+    <input type="text" id="buscador" class="form-control" placeholder="Buscar por Nro Pedido, IdCliente, Nombre, Apellido o Domicilio...">
+</div>
+
+<div id="printArea">
+    <table class="table table-bordered table-hover">
+        <thead>
+            <tr>
+                <th>Número</th>
+                <th>Cliente</th>
+                <th>Teléfono</th>
+                <th>Domicilio</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th>Total</th>
+                <th class="no-print">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pedido in pedidosOrdenados)
+            {
+                var filaClase = pedido.EstadoPedido == "Entregado" ? "fila-entregado" : "";
+                <tr class="@filaClase"
+                    data-num="@pedido.NumPedido"
+                    data-estado="@pedido.EstadoPedido"
+                    data-filtro="@pedido.NumPedido @pedido.IdCliente @pedido.IdClienteNavigation?.Nombre @pedido.IdClienteNavigation?.Apellido @pedido.IdClienteNavigation?.Domicilio">
+                    <td>@pedido.NumPedido</td>
+                    <td>@pedido.IdClienteNavigation?.Nombre @pedido.IdClienteNavigation?.Apellido</td>
+                    <td>@pedido.IdClienteNavigation?.NumTelefono</td>
+                    <td>@pedido.IdClienteNavigation?.Domicilio</td>
+                    <td>@pedido.FechaPedido?.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>
+                        <span class="badge bg-@(pedido.EstadoPedido == "Pendiente" ? "warning" :
+                                                                               pedido.EstadoPedido == "En preparación" ? "info" :
+                                                                               pedido.EstadoPedido == "En reparto" ? "primary" : "success")">
+                        @pedido.EstadoPedido
+                    </span>
+                </td>
+                <td>@((pedido.MontoTotal ?? 0m).ToString("C"))</td>
+                <td class="no-print">
+                    <a asp-action="Detalle" asp-route-id="@pedido.NumPedido" class="btn btn-sm btn-primary me-1">Ver</a>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-sm btn-warning dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            Estado
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item cambiar-estado" href="#" data-pedido="@pedido.NumPedido" data-estado="Pendiente">Pendiente</a></li>
+                            <li><a class="dropdown-item cambiar-estado" href="#" data-pedido="@pedido.NumPedido" data-estado="En preparación">En preparación</a></li>
+                            <li><a class="dropdown-item cambiar-estado" href="#" data-pedido="@pedido.NumPedido" data-estado="En reparto">En reparto</a></li>
+                            <li><a class="dropdown-item cambiar-estado" href="#" data-pedido="@pedido.NumPedido" data-estado="Entregado">Entregado</a></li>
+                        </ul>
+                    </div>
+                </td>
+            </tr>
+                        }
+        </tbody>
+    </table>
+</div>
+
+<partial name="_ModalConfirmacionGlobal" />
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div class="toast align-items-center text-bg-success border-0" role="alert" id="toastExito" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body" id="toastMensaje">Acción completada correctamente.</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/pedidos.js"></script>
+}

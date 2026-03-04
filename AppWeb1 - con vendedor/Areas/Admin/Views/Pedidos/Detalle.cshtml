@@ -1,0 +1,60 @@
+﻿@model AppWeb1.Models.Pedido
+
+@{
+    ViewData["Title"] = "Detalle del Pedido";
+}
+
+<h2>Detalle del Pedido #@Model.NumPedido</h2>
+
+<p><strong>Cliente:</strong> @Model.IdClienteNavigation?.Nombre @Model.IdClienteNavigation?.Apellido</p>
+
+@* Fecha segura (evita CS1501 con ?.ToString("...")) *@
+<p><strong>Fecha:</strong> @(Model.FechaPedido.HasValue? Model.FechaPedido.Value.ToString("dd/MM/yyyy HH:mm") : "")</p>
+
+<p><strong>Estado:</strong> @Model.EstadoPedido</p>
+<p><strong>Observaciones:</strong> @Model.Observaciones</p>
+
+@* --- MONTO TOTAL: Formateo robusto ---
+   Si MontoTotal implementa IFormattable (decimal, double, int, etc.) => "C"
+   Si no (p.ej., string), se muestra tal cual. *@
+@{
+    object montoObj = Model.MontoTotal!;
+    string montoFmt = (montoObj is IFormattable fmt)
+        ? fmt.ToString("C", System.Globalization.CultureInfo.CurrentCulture)
+        : Convert.ToString(montoObj) ?? "";
+}
+<p><strong>Monto Total:</strong> @montoFmt</p>
+
+<h4>Productos</h4>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Precio Unitario</th>
+            <th>Subtotal</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in (Model.DetallePedidos ?? Enumerable.Empty<AppWeb1.Models.DetallePedido>()))
+        {
+            @* Si tus propiedades son decimal (no ?), esto compila perfecto.
+           Si fueran decimal? también compila. Ajustá nombres si usás "Precio" en vez de "PrecioUnitario". *@
+            var precio = (((decimal?)item.PrecioUnitario) ?? 0m);
+            var subtotal = (((decimal?)item.Subtotal) ?? (precio * item.Cantidad));
+
+            <tr>
+                <td>@item.IdProductoNavigation?.NombreProducto</td>
+                <td>@item.Cantidad</td>
+                <td>@precio.ToString("C")</td>
+                <td>@subtotal.ToString("C")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<p>
+    <a asp-controller="Admin" asp-action="GestionPedidos" class="btn btn-secondary">
+        Volver al listado
+    </a>
+</p>

@@ -1,0 +1,119 @@
+html {
+    font-size: 14px;
+}
+
+@media (min-width: 768px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+    position: relative;
+    min-height: 100%;
+}
+
+body {
+    margin-bottom: 60px;
+}
+
+.modal-content {
+    border-radius: 1rem;
+}
+
+.modal-header.bg-warning {
+    background-color: #ffc107 !important;
+}
+
+.modal-footer .btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+/* ========== LOGIN PAGE ========== */
+body.login-page,
+body.login-page html {
+    height: 100%;
+    margin: 0;
+    background: url("/imagenes/fondoweb.jpg") no-repeat center center fixed;
+    background-size: cover;
+}
+
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.login-box {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    max-width: 350px;
+    width: 100%;
+    text-align: center;
+}
+
+.login-logo {
+    width: 150px;
+    height: 150px;
+    margin-bottom: 20px;
+}
+
+.login-box .form-control {
+    border-radius: 30px;
+    padding: 10px 20px;
+    margin-bottom: 10px;
+}
+
+.btn-login {
+    background: linear-gradient(90deg, #f83600, #f9d423);
+    border: none;
+    border-radius: 30px;
+    padding: 10px 25px;
+    color: white;
+    font-weight: bold;
+}
+
+    .btn-login:hover {
+        background: linear-gradient(90deg, #f12711, #f5af19);
+        color: white;
+    }
+
+.registro-link a {
+    color: #f83600;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+    .registro-link a:hover {
+        text-decoration: underline;
+    }
+
+/* ========== CATÁLOGO Y GESTIÓN DE PRODUCTOS ========== */
+.card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    }
+
+.card-img-top {
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover .card-img-top {
+    transform: scale(1.05);
+}
+
+.producto-card {
+    transition: opacity 0.3s ease-in-out;
+}}
