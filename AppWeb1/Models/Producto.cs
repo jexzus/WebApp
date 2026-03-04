@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Http; // importante para usar IFormFile
 
-namespace AppWeb1.Models
+namespace AppWeb1.Models    
 {
     public partial class Producto
     {

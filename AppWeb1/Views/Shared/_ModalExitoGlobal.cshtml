@@ -1,0 +1,17 @@
+﻿@* Views/Shared/_ModalExitoGlobal.cshtml *@
+<div class="modal fade" id="modalExito" tabindex="-1" aria-labelledby="tituloExito" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border border-warning shadow">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title fw-bold" id="tituloExito">@ViewBag.TituloExito ?? "Operación exitosa"</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body bg-light text-dark">
+                <p id="mensajeExito">@ViewBag.MensajeExito ?? "La operación se realizó correctamente."</p>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-warning" data-bs-dismiss="modal">Aceptar</button>
+            </div>
+        </div>
+    </div>
+</div>

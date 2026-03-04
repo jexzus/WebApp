@@ -1,0 +1,39 @@
+@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="login-container">
+    <div class="login-box">
+        <img src="/imagenes/logo.png" alt="User Icon" class="login-logo" />
+        <h3>Iniciar Sesión</h3>
+        <form asp-action="Login" method="post">
+            @Html.AntiForgeryToken()
+            <input type="text" name="nombreUsuario" class="form-control" placeholder="Nombre de Usuario" required />
+            <input type="password" name="contraseña" class="form-control" placeholder="Contraseña" required />
+            <button type="submit" class="btn btn-login">Ingresar</button>
+        </form>
+
+        <div class="registro-link mt-3 text-center">
+            ¿No tenés cuenta? <a asp-action="PreRegistro">Registrate como cliente</a>
+        </div>
+        <div class="registro-link mt-2 text-center">
+            <a asp-controller="Usuario" asp-action="RecuperarContrasena">¿Olvidaste tu contraseña?</a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            var registroExitoso = '@(TempData["RegistroExitoso"] as bool? ?? false)' === 'True';
+            if (registroExitoso && typeof mostrarNotificacion !== 'undefined') {
+                mostrarNotificacion(
+                    'bienvenida',
+                    '@Html.Raw(TempData["RegistroExitosoMensaje"] ?? "Tu cuenta fue creada correctamente.")',
+                    { titulo: '@Html.Raw(TempData["RegistroExitosoTitulo"] ?? "¡Registro exitoso!")' }
+                );
+            }
+        })();
+    </script>
+}

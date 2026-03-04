@@ -1,0 +1,129 @@
+@* ============================================================ *@
+@* ARCHIVO: Views/Usuario/ConfirmarRecuperacion.cshtml         *@
+@* ============================================================ *@
+@model AppWeb1.ViewModels.ConfirmarRecuperacionVM
+@{
+    ViewData["Title"] = "Confirmar Recuperación";
+}
+
+<div class="auth-page">
+    <div class="auth-card shadow">
+        <div class="auth-card__header">
+            <h1 class="auth-title">Nueva Contraseña</h1>
+            <p class="auth-subtitle">
+                Ingresá el código que enviamos a <strong>@Model.Email</strong> y establecé tu nueva contraseña.
+            </p>
+        </div>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger">
+                <ul class="mb-0">
+                    @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@error.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        }
+
+        <form asp-controller="Usuario" asp-action="ConfirmarRecuperacion" method="post" class="auth-form" novalidate>
+            @Html.AntiForgeryToken()
+
+            @* Email oculto como respaldo (el controller usa la sesión como fuente de verdad) *@
+            <input type="hidden" asp-for="Email" />
+
+            <div class="mb-3">
+                <label asp-for="Codigo" class="form-label fw-semibold">Código de verificación</label>
+                <input asp-for="Codigo"
+                       type="text"
+                       inputmode="numeric"
+                       maxlength="6"
+                       class="form-control form-control-lg text-center ls-4 @(ViewData.ModelState["Codigo"]?.Errors.Count > 0 ? "is-invalid" : "")"
+                       placeholder="000000"
+                       autocomplete="one-time-code"
+                       autofocus />
+                <span asp-validation-for="Codigo" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="NuevaContraseña" class="form-label fw-semibold">Nueva contraseña</label>
+                <div class="input-group">
+                    <input asp-for="NuevaContraseña"
+                           type="password"
+                           id="nuevaContrasena"
+                           class="form-control form-control-lg @(ViewData.ModelState["NuevaContraseña"]?.Errors.Count > 0 ? "is-invalid" : "")"
+                           placeholder="Mínimo 6 caracteres" />
+                    <button class="btn btn-outline-secondary" type="button" onclick="togglePass('nuevaContrasena', this)" tabindex="-1">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <span asp-validation-for="NuevaContraseña" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="ConfirmarContraseña" class="form-label fw-semibold">Confirmar contraseña</label>
+                <div class="input-group">
+                    <input asp-for="ConfirmarContraseña"
+                           type="password"
+                           id="confirmarContrasena"
+                           class="form-control form-control-lg @(ViewData.ModelState["ConfirmarContraseña"]?.Errors.Count > 0 ? "is-invalid" : "")"
+                           placeholder="Repetí la contraseña" />
+                    <button class="btn btn-outline-secondary" type="button" onclick="togglePass('confirmarContrasena', this)" tabindex="-1">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <span asp-validation-for="ConfirmarContraseña" class="text-danger small"></span>
+            </div>
+
+            <button type="submit" class="btn btn-success btn-lg w-100 btn-auth">
+                <i class="fas fa-lock me-2"></i>Cambiar contraseña
+            </button>
+        </form>
+
+        @* Reenviar código *@
+        <div class="text-center mt-3">
+            <span class="text-muted small">¿No recibiste el código?</span>
+            <form asp-controller="Usuario" asp-action="ReenviarCodigoRecuperacion" method="post" class="d-inline ms-1">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-link btn-sm p-0 align-baseline">Reenviar</button>
+            </form>
+        </div>
+
+        <div class="auth-footer mt-3 text-center">
+            <a asp-controller="Usuario" asp-action="RecuperarContrasena" class="link-secondary small">
+                <i class="fas fa-arrow-left me-1"></i>Usar otro email
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function togglePass(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+
+        // Solo aceptar dígitos en el campo código
+        document.querySelector('input[name="Codigo"]')?.addEventListener('input', function () {
+            this.value = this.value.replace(/\D/g, '').slice(0, 6);
+        });
+
+        document.querySelector('form.auth-form')?.addEventListener('submit', function () {
+            const btn = this.querySelector('button[type="submit"]');
+            if (btn && !btn.disabled) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+            }
+        });
+    </script>
+    <partial name="_ValidationScriptsPartial" />
+}

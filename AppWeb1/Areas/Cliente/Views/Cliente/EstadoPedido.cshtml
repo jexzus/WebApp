@@ -1,0 +1,578 @@
+@* EstadoPedido.cshtml *@
+@model List<AppWeb1.Models.Pedido>
+@using System.Globalization
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery AntiforgeryService
+@{
+    ViewData["Title"] = "Mis Pedidos";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var tokens = AntiforgeryService.GetAndStoreTokens(Context);
+
+    var estadosTerminados = new[] { "Entregado", "Cancelado" };
+    var pedidosEnCurso = Model
+        .Where(p => !estadosTerminados.Contains(p.EstadoPedido))
+        .OrderByDescending(p => p.FechaPedido)
+        .ToList();
+    var historial = Model
+        .Where(p => estadosTerminados.Contains(p.EstadoPedido))
+        .OrderByDescending(p => p.FechaPedido)
+        .ToList();
+
+    int clienteId = ViewBag.ClienteId ?? 0;
+}
+
+<meta name="request-verification-token" content="@tokens.RequestToken" />
+
+<style>
+.stepper-outer {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    padding: 8px 0 4px;
+}
+.stepper-track {
+    position: absolute;
+    top: 30px;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: #dee2e6;
+    border-radius: 2px;
+    z-index: 0;
+}
+.stepper-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 4px;
+    background: #198754;
+    border-radius: 2px;
+    transition: width .6s ease;
+}
+.stepper-steps {
+    display: flex;
+    width: 100%;
+    position: relative;
+    z-index: 1;
+}
+.stepper-step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.step-circle {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 3px solid #dee2e6;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    transition: all .3s ease;
+    line-height: 1;
+}
+.step-circle.done {
+    background: #198754;
+    border-color: #198754;
+    color: #fff;
+    font-size: .85rem;
+}
+.step-circle.now {
+    background: #fff;
+    border-color: #198754;
+    box-shadow: 0 0 0 5px rgba(25,135,84,.18);
+}
+.step-circle.wait {
+    color: #adb5bd;
+}
+.step-label {
+    margin-top: 7px;
+    font-size: .72rem;
+    text-align: center;
+    color: #6c757d;
+    max-width: 72px;
+    line-height: 1.25;
+}
+.step-label.lbl-now  { color: #198754; font-weight: 700; }
+.step-label.lbl-done { color: #198754; }
+
+.card-pedido {
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 3px 16px rgba(0,0,0,.1);
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+.card-pedido-head {
+    background: linear-gradient(135deg,#1a1a2e,#16213e);
+    color: #fff;
+    padding: 14px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.card-pedido-body { padding: 18px 20px; }
+
+.fila-entregado { background: #e8f5e9 !important; }
+.fila-cancelado { background: #fff0f0 !important; opacity:.85; }
+
+.removing {
+    transition: opacity .35s, transform .35s;
+    opacity: 0;
+    transform: scale(.97);
+    pointer-events: none;
+}
+</style>
+
+<div class="container py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0 fw-bold">📦 Mis Pedidos</h2>
+            <small class="text-muted">Actualizaciones en tiempo real</small>
+        </div>
+        <button class="btn btn-warning btn-sm" onclick="window.print()">
+            <i class="fas fa-print me-1"></i>Imprimir
+        </button>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info rounded-3">
+            <i class="fas fa-info-circle me-2"></i>No tenés pedidos registrados todavía.
+        </div>
+    }
+    else
+    {
+        @if (pedidosEnCurso.Any())
+        {
+            <h5 class="fw-bold text-dark mb-3">
+                <span class="badge bg-warning text-dark me-2">EN CURSO</span>
+                @pedidosEnCurso.Count pedido(s) activo(s)
+            </h5>
+            <div id="contenedorPedidosCurso">
+                @foreach (var p in pedidosEnCurso)
+                {
+                    var esDom = p.ModoEntrega?.Equals("Domicilio", StringComparison.OrdinalIgnoreCase) == true;
+
+                    string[] pasos  = esDom
+                        ? new[] { "Pendiente", "En preparación", "En reparto",   "Entregado" }
+                        : new[] { "Pendiente", "En preparación", "Para retirar", "Entregado" };
+
+                    string[] emojis = esDom
+                        ? new[] { "🕐", "🍳", "🏍️", "✅" }
+                        : new[] { "🕐", "🍳", "🏪", "✅" };
+
+                    string[] labels = esDom
+                        ? new[] { "Pendiente", "En prep.", "En reparto",   "Entregado" }
+                        : new[] { "Pendiente", "En prep.", "Para retirar", "Entregado" };
+
+                    int step = Array.IndexOf(pasos, p.EstadoPedido);
+                    if (step < 0) step = 0;
+                    double pct = pasos.Length > 1 ? (double)step / (pasos.Length - 1) * 100.0 : 0;
+
+                    <div class="card-pedido" id="card-pedido-@p.NumPedido"
+                         data-modo="@(esDom ? "domicilio" : "retiro")">
+
+                        <div class="card-pedido-head">
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="fs-5 fw-bold">#@p.NumPedido</span>
+                                <span class="badge @(esDom ? "bg-primary" : "bg-secondary")">
+                                    <i class="fas @(esDom ? "fa-motorcycle" : "fa-store") me-1"></i>
+                                    @(esDom ? "Domicilio" : "Retiro")
+                                </span>
+                            </div>
+                            <div class="text-end">
+                                <div class="small opacity-75">@p.FechaPedido?.ToString("dd/MM/yyyy HH:mm")</div>
+                                <div class="fw-bold text-warning">@p.MontoTotal?.ToString("C", new CultureInfo("es-AR"))</div>
+                            </div>
+                        </div>
+
+                        <div class="card-pedido-body">
+                            @if (p.EstadoPedido == "Cancelado")
+                            {
+                                <div class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-3"
+                                     style="background:#fff5f5;border:1px solid #f5c6cb;color:#842029;">
+                                    <span class="fs-4">❌</span><strong>Pedido cancelado</strong>
+                                </div>
+                            }
+                            else
+                            {
+                                <!-- STEPPER -->
+                                <div class="stepper-outer" id="stepper-@p.NumPedido"
+                                     data-estado="@p.EstadoPedido"
+                                     data-modo="@(esDom ? "domicilio" : "retiro")">
+                                    <div class="stepper-track">
+                                        <div class="stepper-fill" id="fill-@p.NumPedido"
+                                             style="width:@pct.ToString("0.0", CultureInfo.InvariantCulture)%">
+                                        </div>
+                                    </div>
+                                    <div class="stepper-steps">
+                                        @for (int i = 0; i < pasos.Length; i++)
+                                        {
+                                            var cls  = i < step ? "done" : i == step ? "now" : "wait";
+                                            var lcls = i == step ? "lbl-now" : i < step ? "lbl-done" : "";
+                                            <div class="stepper-step">
+                                                <div class="step-circle @cls" id="circle-@(p.NumPedido)-@i">
+                                                    @if (i < step)
+                                                    {
+                                                        <i class="fas fa-check"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>@emojis[i]</span>
+                                                    }
+                                                </div>
+                                                <div class="step-label @lcls">@labels[i]</div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- Productos -->
+                            <div class="d-flex flex-wrap gap-1 mt-3">
+                                @foreach (var item in p.DetallePedidos)
+                                {
+                                    <span class="badge bg-light text-dark border">
+                                        @item.IdProductoNavigation?.NombreProducto &times; @item.Cantidad
+                                    </span>
+                                }
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(p.Observaciones))
+                            {
+                                <div class="mt-2 small text-muted">
+                                    <i class="fas fa-sticky-note me-1"></i>@p.Observaciones
+                                </div>
+                            }
+
+                            <div class="mt-3" id="acciones-@p.NumPedido">
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-danger btn-cancelar-pedido"
+                                        data-pedido="@p.NumPedido"
+                                        data-estado="@p.EstadoPedido">
+                                    <i class="fas fa-times-circle me-1"></i>Cancelar pedido
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-success rounded-3 mb-4">
+                <i class="fas fa-check-circle me-2"></i>No tenés pedidos activos en este momento.
+            </div>
+        }
+
+        @if (historial.Any())
+        {
+            <h5 class="fw-bold text-muted mb-3">
+                <i class="fas fa-history me-2"></i>Historial de Pedidos
+            </h5>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered align-middle" id="tablaHistorial">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th>N°</th><th>Fecha</th><th>Estado</th>
+                            <th>Entrega</th><th>Productos</th><th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in historial)
+                        {
+                            var bh = p.EstadoPedido == "Entregado" ? "bg-success" : "bg-danger";
+                            var ch = p.EstadoPedido == "Entregado" ? "fila-entregado" : "fila-cancelado";
+                            <tr class="@ch" id="hist-@p.NumPedido">
+                                <td class="fw-bold">#@p.NumPedido</td>
+                                <td class="small">@p.FechaPedido?.ToString("dd/MM/yy HH:mm")</td>
+                                <td><span class="badge @bh">@p.EstadoPedido</span></td>
+                                <td>
+                                    <span class="badge @(p.ModoEntrega?.Equals("Domicilio",StringComparison.OrdinalIgnoreCase)==true?"bg-primary":"bg-secondary")">
+                                        @p.ModoEntrega
+                                    </span>
+                                </td>
+                                <td class="small">
+                                    @string.Join(", ", p.DetallePedidos.Select(d => $"{d.IdProductoNavigation?.NombreProducto} x{d.Cantidad}"))
+                                </td>
+                                <td>@p.MontoTotal?.ToString("C", new CultureInfo("es-AR"))</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+
+    <div class="mt-4">
+        <a asp-controller="Cliente" asp-action="Catalogo" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Volver al Catálogo
+        </a>
+    </div>
+</div>
+
+<!-- Modal confirmar cancelacion -->
+<div class="modal fade" id="modalConfirmarCancelacion" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title"><i class="fas fa-times-circle text-danger me-2"></i>Cancelar pedido</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="msgConfirmarCancelacion">
+                ¿Estás seguro que querés cancelar este pedido?
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, mantener</button>
+                <button type="button" class="btn btn-danger" id="btnConfirmarCancelacion">
+                    <i class="fas fa-times-circle me-1"></i>Sí, cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal devolucion -->
+<div class="modal fade" id="modalDevolucion" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-warning rounded-4 shadow">
+            <div class="modal-header bg-warning text-dark border-0">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>Aviso de devolución</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">
+                    <strong>La devolución está a cargo de la empresa.</strong><br>
+                    Tu pedido fue cancelado. Como ya estaba en proceso de entrega o listo para retirar,
+                    la devolución del importe será gestionada por nuestro equipo.
+                </p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-warning" data-bs-dismiss="modal">Entendido</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:2000">
+    <div id="toastCliente" class="toast align-items-center border-0" role="alert"
+         aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body fw-semibold" id="toastClienteMensaje">Listo.</div>
+            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@@8.0.7/dist/browser/signalr.min.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    var DOM_PASOS  = ['Pendiente','En preparaci\u00f3n','En reparto','Entregado'];
+    var RET_PASOS  = ['Pendiente','En preparaci\u00f3n','Para retirar','Entregado'];
+    var DOM_EMOJIS = ['\u{1F550}','\u{1F373}','\u{1F3CD}\uFE0F','\u2705'];
+    var RET_EMOJIS = ['\u{1F550}','\u{1F373}','\u{1F3EA}','\u2705'];
+    var DOM_LABELS = ['Pendiente','En prep.','En reparto','Entregado'];
+    var RET_LABELS = ['Pendiente','En prep.','Para retirar','Entregado'];
+
+    var pendiente = null;
+    var clienteId = @clienteId;
+
+    /* ── Toast ── */
+    function toast(msg, ok) {
+        if (ok === undefined) ok = true;
+        var el = document.getElementById('toastCliente');
+        var bd = document.getElementById('toastClienteMensaje');
+        if (!el || !bd) return;
+        bd.textContent = msg;
+        el.classList.remove('text-bg-success','text-bg-danger','text-bg-warning');
+        el.classList.add(ok ? 'text-bg-success' : 'text-bg-danger');
+        bootstrap.Toast.getOrCreateInstance(el, {delay:5000}).show();
+    }
+
+    /* ── CSRF ── */
+    function getToken() {
+        var m = document.querySelector('meta[name="request-verification-token"]');
+        return m ? m.content : '';
+    }
+
+    /* ── Cancelar ── */
+    async function cancelarPedido(num) {
+        var res = await fetch('/Cliente/CancelarPedidoAjax', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': getToken()
+            },
+            body: JSON.stringify({ numPedido: parseInt(num) })
+        });
+        if (!res.ok) throw new Error('Error HTTP ' + res.status);
+        var d = await res.json();
+        if (!d.success) throw new Error(d.message || 'Error al cancelar.');
+        return d;
+    }
+
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('.btn-cancelar-pedido');
+        if (!btn) return;
+        e.preventDefault();
+        pendiente = btn.dataset.pedido;
+        var msg = document.getElementById('msgConfirmarCancelacion');
+        if (msg) msg.textContent = '\u00bfCancelás el pedido #' + pendiente + '?';
+        bootstrap.Modal.getOrCreateInstance(
+            document.getElementById('modalConfirmarCancelacion')).show();
+    });
+
+    var btnOk = document.getElementById('btnConfirmarCancelacion');
+    if (btnOk) {
+        btnOk.addEventListener('click', async function() {
+            bootstrap.Modal.getInstance(
+                document.getElementById('modalConfirmarCancelacion'))?.hide();
+            if (!pendiente) return;
+            var num = pendiente; pendiente = null;
+            var src = document.querySelector('.btn-cancelar-pedido[data-pedido="'+num+'"]');
+            if (src) { src.disabled=true; src.innerHTML='<i class="fas fa-spinner fa-spin"></i>'; }
+            try {
+                var d = await cancelarPedido(num);
+                moverACancelado(num);
+                if (d.requiereAvisoDevolucion) {
+                    bootstrap.Modal.getOrCreateInstance(
+                        document.getElementById('modalDevolucion')).show();
+                } else {
+                    toast('Pedido #'+num+' cancelado.');
+                }
+            } catch(err) {
+                toast(err.message, false);
+                if (src) { src.disabled=false; src.innerHTML='<i class="fas fa-times-circle me-1"></i>Cancelar pedido'; }
+            }
+        });
+    }
+
+    /* ── Actualizar stepper ── */
+    function actualizarStepper(numPedido, nuevoEstado, modoEntrega) {
+        var stepper = document.getElementById('stepper-' + numPedido);
+        if (!stepper) return;
+        var esDom  = (modoEntrega || stepper.dataset.modo || '').toLowerCase() !== 'retiro';
+        var pasos  = esDom ? DOM_PASOS  : RET_PASOS;
+        var emojis = esDom ? DOM_EMOJIS : RET_EMOJIS;
+        var labels = esDom ? DOM_LABELS : RET_LABELS;
+        var step   = pasos.indexOf(nuevoEstado);
+        if (step < 0) return;
+        var pct = pasos.length > 1 ? (step / (pasos.length - 1)) * 100 : 0;
+        stepper.dataset.estado = nuevoEstado;
+
+        /* barra de progreso */
+        var fill = document.getElementById('fill-' + numPedido);
+        if (fill) fill.style.width = pct + '%';
+
+        /* circulos */
+        for (var i = 0; i < pasos.length; i++) {
+            var circ = document.getElementById('circle-' + numPedido + '-' + i);
+            var lbl  = circ ? circ.nextElementSibling : null;
+            if (!circ) continue;
+            if (i < step) {
+                circ.className = 'step-circle done';
+                circ.innerHTML = '<i class="fas fa-check"></i>';
+            } else if (i === step) {
+                circ.className = 'step-circle now';
+                circ.innerHTML = '<span>' + emojis[i] + '</span>';
+            } else {
+                circ.className = 'step-circle wait';
+                circ.innerHTML = '<span>' + emojis[i] + '</span>';
+            }
+            if (lbl) {
+                lbl.className = 'step-label' +
+                    (i === step ? ' lbl-now' : i < step ? ' lbl-done' : '');
+            }
+        }
+    }
+
+    /* ── Mover a historial ── */
+    function moverACancelado(numPedido) {
+        var card = document.getElementById('card-pedido-' + numPedido);
+        if (!card || card.dataset.movido) return;
+        card.dataset.movido = '1';
+        card.classList.add('removing');
+        setTimeout(function() {
+            var modo = card.dataset.modo;
+            card.remove();
+            agregarFila(numPedido, 'Cancelado', modo);
+        }, 370);
+    }
+
+    function moverAEntregado(numPedido) {
+        var card = document.getElementById('card-pedido-' + numPedido);
+        if (!card || card.dataset.movido) return;
+        card.dataset.movido = '1';
+        actualizarStepper(numPedido, 'Entregado',
+            card.dataset.modo === 'retiro' ? 'retiro' : 'domicilio');
+        setTimeout(function() {
+            card.classList.add('removing');
+            var modo = card.dataset.modo;
+            setTimeout(function() {
+                card.remove();
+                agregarFila(numPedido, 'Entregado', modo);
+                toast('\ud83c\udf89 Tu pedido #' + numPedido + ' fue entregado. \u00a1Que lo disfrutes!');
+            }, 370);
+        }, 1200);
+    }
+
+    function agregarFila(numPedido, estado, modo) {
+        var tbody = document.querySelector('#tablaHistorial tbody');
+        if (!tbody) return;
+        if (document.getElementById('hist-' + numPedido)) return;
+        var bc = estado === 'Entregado' ? 'bg-success' : 'bg-danger';
+        var fc = estado === 'Entregado' ? 'fila-entregado' : 'fila-cancelado';
+        var tr = document.createElement('tr');
+        tr.className = fc; tr.id = 'hist-' + numPedido;
+        tr.innerHTML =
+            '<td class="fw-bold">#'+numPedido+'</td>' +
+            '<td class="small">ahora</td>' +
+            '<td><span class="badge '+bc+'">'+estado+'</span></td>' +
+            '<td colspan="3"><small class="text-muted">' +
+            (estado === 'Entregado' ? '\u00a1Gracias por tu compra!' : 'Pedido cancelado') +
+            '</small></td>';
+        tbody.insertAdjacentElement('afterbegin', tr);
+    }
+
+    /* ── SignalR ── */
+    var conn = new signalR.HubConnectionBuilder()
+        .withUrl('/deliveryHub?rol=cliente&clienteId=' + clienteId)
+        .withAutomaticReconnect([0, 2000, 5000, 15000])
+        .configureLogging(signalR.LogLevel.Warning)
+        .build();
+
+    conn.on('MiPedidoActualizado', function(data) {
+        console.log('[SignalR] MiPedidoActualizado', data);
+        var e = data.nuevoEstado, n = data.numPedido, m = data.modoEntrega || '';
+        if (e === 'Entregado')      moverAEntregado(n);
+        else if (e === 'Cancelado') moverACancelado(n);
+        else { actualizarStepper(n, e, m); toast('Tu pedido #'+n+' ahora: '+e+' \ud83d\udd04'); }
+    });
+
+    conn.on('PedidoCancelado', function(data) {
+        if (parseInt(data.idCliente,10) !== parseInt(clienteId,10)) return;
+        moverACancelado(data.numPedido);
+    });
+
+    conn.onreconnected(function() {
+        console.info('[SignalR] Reconectado. clienteId=' + clienteId);
+    });
+
+    conn.start()
+        .then(function() { console.info('[SignalR] Conectado. clienteId=' + clienteId); })
+        .catch(function(e) { console.error('[SignalR] Error:', e); });
+
+    window._clienteHubConn = conn;
+
+})();
+</script>
+}

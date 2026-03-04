@@ -1,0 +1,222 @@
+﻿@model AppWeb1.Models.Usuario
+@using Microsoft.AspNetCore.Http
+@{
+    ViewData["Title"] = "Gestión de Usuarios";
+
+    var staffUsuarios = ViewBag.StaffUsuarios as List<AppWeb1.Models.Usuario>;
+    var esSuperAdmin = ViewBag.EsSuperAdmin as bool? ?? false;
+    var rolActual = Context.Session.GetString("Rol")?.ToLowerInvariant();
+
+    var staffNombre = ViewBag.StaffNombre as string ?? "";
+    var staffApellido = ViewBag.StaffApellido as string ?? "";
+}
+
+<div class="container mt-4">
+    <h2 class="mb-4">
+        <i class="fas fa-user-plus"></i> Crear Nuevo Usuario (Staff)
+    </h2>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form asp-action="CrearUsuario" method="post">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="NombreUsuario" class="form-label fw-bold">
+                            <i class="fas fa-user"></i> Nombre de Usuario
+                        </label>
+                        <input asp-for="NombreUsuario" class="form-control" placeholder="Ingrese nombre de usuario" />
+                        <span asp-validation-for="NombreUsuario" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Contraseña" class="form-label fw-bold">
+                            <i class="fas fa-lock"></i> Contraseña
+                        </label>
+                        <input asp-for="Contraseña" class="form-control" type="password" placeholder="Mínimo 6 caracteres" />
+                        <span asp-validation-for="Contraseña" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">
+                        <i class="fas fa-user-tag"></i> Rol
+                    </label>
+                    <select name="Rol" id="RolSelect" class="form-select" required>
+                        <option value="" disabled selected>Seleccione un rol</option>
+                        @if (esSuperAdmin)
+                        {
+                            <option value="admin">Administrador</option>
+                            <option value="vendedor">Vendedor</option>
+                            <option value="repartidor">Repartidor</option>
+                        }
+                        else if (rolActual == "admin")
+                        {
+                            <option value="vendedor">Vendedor</option>
+                            <option value="repartidor">Repartidor</option>
+                        }
+                    </select>
+                </div>
+
+                <div id="CamposDatosPersonales" class="row" style="display:none;">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold"><i class="fas fa-id-card"></i> Nombre</label>
+                        <input name="Nombre" id="NombreInput" class="form-control" value="@staffNombre" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold"><i class="fas fa-id-card"></i> Apellido</label>
+                        <input name="Apellido" id="ApellidoInput" class="form-control" value="@staffApellido" />
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 mt-2">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Crear Usuario</button>
+                    <a asp-area="Admin" asp-controller="Home" asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Volver
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (staffUsuarios != null && staffUsuarios.Count > 0)
+    {
+        <div class="card shadow-sm mt-5">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0"><i class="fas fa-users"></i> Usuarios Staff</h3>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered align-middle" id="tablaUsuarios">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 5%">#</th>
+                                <th style="width: 25%">Usuario</th>
+                                <th style="width: 25%">Nueva Contraseña</th>
+                                <th style="width: 15%">Rol</th>
+                                <th style="width: 30%" class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                int contador = 1;
+                            }
+                            @foreach (var usuario in staffUsuarios)
+                            {
+                                <tr id="fila-@usuario.Id" data-rol="@usuario.Rol">
+                                    <td>@contador</td>
+                                    <td>
+                                        <input type="text" class="form-control" id="user-@usuario.Id" value="@usuario.NombreUsuario" />
+                                    </td>
+                                    <td>
+                                        <input type="password" class="form-control" id="pass-@usuario.Id" placeholder="Opcional" />
+                                    </td>
+                                    <td><span class="badge bg-primary">@usuario.Rol</span></td>
+                                    <td class="text-center">
+                                        <button class="btn btn-success" onclick="guardarAdmin(@usuario.Id)">
+                                            <i class="fas fa-save"></i> Guardar
+                                        </button>
+                                        <button class="btn btn-danger" onclick="eliminarAdmin(@usuario.Id, '@usuario.Rol', '@usuario.NombreUsuario')">
+                                            <i class="fas fa-trash"></i> Eliminar
+                                        </button>
+                                    </td>
+                                </tr>
+                                contador++;
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // 1. Lógica UI para campos de Repartidor/Vendedor
+        document.addEventListener("DOMContentLoaded", function () {
+            const rolSelect = document.getElementById("RolSelect");
+            const box = document.getElementById("CamposDatosPersonales");
+            const nombre = document.getElementById("NombreInput");
+            const apellido = document.getElementById("ApellidoInput");
+
+            function toggleDatosPersonales() {
+                const rol = (rolSelect?.value || "").toLowerCase();
+                const requiere = (rol === "vendedor" || rol === "repartidor");
+                if (box) box.style.display = requiere ? "flex" : "none";
+                if (nombre) nombre.required = requiere;
+                if (apellido) apellido.required = requiere;
+            }
+
+            if (rolSelect) rolSelect.addEventListener("change", toggleDatosPersonales);
+            toggleDatosPersonales();
+        });
+
+        // Helper para Token Antiforgery
+        function getCsrfToken() {
+            const el = document.querySelector('meta[name="request-verification-token"]');
+            return el ? el.content : '';
+        }
+
+        // 2. GUARDAR: Enviar JSON al servidor (Compatible con [FromBody] Usuario)
+        async function guardarAdmin(id) {
+            const nombreInput = document.getElementById(`user-${id}`);
+            const passInput = document.getElementById(`pass-${id}`);
+
+            const nombreUsuario = (nombreInput?.value || "").trim();
+            const contraseña = (passInput?.value || "").trim();
+
+            if (!nombreUsuario) return alert("El nombre de usuario es obligatorio.");
+
+            try {
+                const response = await fetch('/Usuario/ActualizarAdmin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json', // <--- IMPORTANTE: JSON
+                        'RequestVerificationToken': getCsrfToken()
+                    },
+                    body: JSON.stringify({
+                        Id: id,
+                        NombreUsuario: nombreUsuario, // <--- Nombres exactos de la clase C#
+                        Contraseña: contraseña
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert(result.message || "Usuario actualizado.");
+                    if (passInput) passInput.value = "";
+                } else {
+                    alert(result.message || "Error al actualizar.");
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Error de conexión al servidor. Revisa los nombres de las propiedades JSON.");
+            }
+        }
+
+        // 3. ELIMINAR: Enviar ID por URL
+        async function eliminarAdmin(id, rol, nombre) {
+            if ((rol || "").toLowerCase() === 'superadmin') return alert("No se puede eliminar al SuperAdmin.");
+            if (!confirm(`¿Eliminar a "${nombre}"?`)) return;
+
+            try {
+                const response = await fetch(`/Usuario/EliminarAdmin?id=${id}`, {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': getCsrfToken() }
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    document.getElementById(`fila-${id}`)?.remove();
+                    alert("Usuario eliminado.");
+                } else {
+                    alert(result.message || "No se pudo eliminar.");
+                }
+            } catch (error) {
+                alert("Error de conexión.");
+            }
+        }
+    </script>
+}

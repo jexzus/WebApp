@@ -1,0 +1,51 @@
+﻿@{
+    ViewData["Title"] = "Panel de Administración";
+    
+    // 1. Obtenemos el rol desde el ViewBag (como dijiste que ya hacías)
+    //    Lo pasamos a minúscula para una comparación segura.
+    string rol = (ViewBag.Rol as string ?? string.Empty).ToLower();
+}
+
+<div class="d-flex justify-content-center align-items-center" style="min-height: 85vh;">
+    <div class="w-100" style="max-width: 700px;">
+
+        <h2 class="text-center mb-5 fw-bold">Panel de Administración</h2>
+
+        @if (rol != "repartidor")
+        {
+            <div class="card mb-4 shadow" style="border-left: 8px solid #e53935;">
+                <div class="card-body">
+                    <h4 class="fw-bold text-danger">Catálogo de Productos</h4>
+                    <p>Administrar productos del sistema (crear, editar, eliminar).</p>
+                    <a asp-area="Admin" asp-controller="Catalogo" asp-action="Index" class="btn btn-warning fw-bold">
+                        Gestión de Catálogo
+                    </a>
+                </div>
+            </div>
+        }
+
+        <div class="card mb-4 shadow" style="border-left: 8px solid #ffc107;">
+            <div class="card-body">
+                <h4 class="fw-bold text-warning">Gestión de Pedidos</h4>
+                <p>Ver y modificar el estado de los pedidos de los clientes.</p>
+                <a asp-area="Admin" asp-controller="Pedidos" asp-action="Index" class="btn btn-danger fw-bold">
+                    Ver Pedidos
+                </a>
+            </div>
+        </div>
+
+        @if (rol != "repartidor")
+        {
+            <div class="card mb-4 shadow" style="border-left: 8px solid orange;">
+                <div class="card-body">
+                    <h4 class="fw-bold text-dark">Gestión de Administradores</h4>
+                    <p>Administrar permisos de administradores.</p>
+                    <a asp-area="" asp-controller="Usuario" asp-action="CrearUsuario" class="btn btn-dark fw-bold">
+                        Gestionar Administradores
+                    </a>
+                </div>
+            </div>
+        }
+
+    </div>
+</div>

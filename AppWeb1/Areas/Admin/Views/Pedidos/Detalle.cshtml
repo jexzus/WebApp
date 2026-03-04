@@ -1,0 +1,502 @@
+@* ============================================================ *@
+@* ARCHIVO: Areas/Admin/Views/Pedidos/Detalle.cshtml            *@
+@* CORRECCIONES:                                                *@
+@*   ★ FIX: @section Scripts define window.* PRIMERO,         *@
+@*     luego carga SignalR y pedidos.js — mismo orden que      *@
+@*     Index.cshtml para garantizar que DOMContentLoaded       *@
+@*     de pedidos.js lea las variables correctamente           *@
+@*   ★ Las funciones inline solicitarRepartidorDetalle(),      *@
+@*     cambiarEstadoDetalle() y confirmarCambioEstadoDetalle() *@
+@*     delegan a las funciones de pedidos.js sin duplicar      *@
+@*     lógica de XSRF ni fetchJson                             *@
+@*   ★ Stepper con fórmula corregida de progreso               *@
+@*   ★ EsperandoRepartidor soportado en badge y botones        *@
+@* ============================================================ *@
+@model AppWeb1.Models.Pedido
+@using Microsoft.AspNetCore.Http
+@using System.Globalization
+@using static AppWeb1.Security.Roles
+
+@{
+    ViewData["Title"] = $"Detalle Pedido N° {Model.NumPedido}";
+    var rol = Context.Session.GetString("Rol");
+    bool puedeAsignar         = PuedeAsignarPedidos(Context.Session);
+    bool puedeMarcarEntregado = PuedeMarcarEntregado(Context.Session);
+    bool esAdminOSuperAdmin   = EsAdminOSuperAdmin(Context.Session);
+    bool esRepartidor         = EsRepartidor(Context.Session);
+    bool esSuperAdmin         = EsSuperAdmin(Context.Session);
+
+    var badgeEstado = Model.EstadoPedido switch
+    {
+        "Pendiente"            => "bg-warning text-dark",
+        "En preparación"       => "bg-info text-dark",
+        "EsperandoRepartidor"  => "bg-secondary",
+        "En reparto"           => "bg-primary",
+        "Para retirar"         => "bg-warning text-dark",
+        "Entregado"            => "bg-success",
+        "Cancelado"            => "bg-danger",
+        _                      => "bg-secondary"
+    };
+
+    bool esDomicilio = Model.ModoEntrega?.Equals("Domicilio", StringComparison.OrdinalIgnoreCase) == true;
+
+    // ── Pasos del stepper según modo de entrega ──
+    string[] pasos  = esDomicilio
+        ? new[] { "Pendiente", "En preparación", "En reparto",   "Entregado" }
+        : new[] { "Pendiente", "En preparación", "Para retirar", "Entregado" };
+    string[] emojis = esDomicilio
+        ? new[] { "🕐", "🍳", "🏍️", "✅" }
+        : new[] { "🕐", "🍳", "🏪", "✅" };
+    string[] labels = esDomicilio
+        ? new[] { "Pendiente", "En prep.", "En reparto",   "Entregado" }
+        : new[] { "Pendiente", "En prep.", "Para retirar", "Entregado" };
+
+    int stepIdx = Array.IndexOf(pasos, Model.EstadoPedido);
+    // EsperandoRepartidor está entre "En preparación" y "En reparto" → mostrar como paso 1 (En prep)
+    if (stepIdx < 0)
+        stepIdx = Model.EstadoPedido == "EsperandoRepartidor" ? 1 : 0;
+
+    // Fórmula corregida: ancho = (index / (total - 1)) * 100
+    double pct = pasos.Length > 1 ? (double)stepIdx / (pasos.Length - 1) * 100.0 : 0.0;
+
+    // ── Visibilidad de botones especiales ──
+    bool mostrarBtnSolicitarRepartidor = puedeAsignar
+        && esDomicilio
+        && (Model.EstadoPedido == "En preparación" || Model.EstadoPedido == "EsperandoRepartidor");
+
+    bool mostrarBtnParaRetirar = puedeAsignar
+        && !esDomicilio
+        && Model.EstadoPedido == "En preparación";
+
+    bool mostrarBtnEntregado = puedeMarcarEntregado
+        && !esRepartidor
+        && (Model.EstadoPedido == "En reparto" || Model.EstadoPedido == "Para retirar");
+}
+
+<div class="container mt-4">
+    <div class="row">
+
+        @* ── Columna izquierda: info del pedido + stepper ── *@
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><i class="fas fa-receipt"></i> Pedido N° @Model.NumPedido</h4>
+                    <span class="badge @badgeEstado fs-6">@Model.EstadoPedido</span>
+                </div>
+                <div class="card-body">
+
+                    @* ── Barra de progreso / Stepper ── *@
+                    @if (Model.EstadoPedido != "Cancelado")
+                    {
+                        <div class="stepper-outer mb-4">
+                            <div class="stepper-track">
+                                <div class="stepper-fill"
+                                     style="width:@pct.ToString("0.0", CultureInfo.InvariantCulture)%"
+                                     role="progressbar">
+                                </div>
+                            </div>
+                            <div class="stepper-steps">
+                                @for (int i = 0; i < pasos.Length; i++)
+                                {
+                                    var cls  = i < stepIdx ? "done" : i == stepIdx ? "now" : "wait";
+                                    var lcls = i == stepIdx ? "lbl-now" : i < stepIdx ? "lbl-done" : "";
+                                    <div class="stepper-step">
+                                        <div class="step-circle @cls">
+                                            @if (i < stepIdx)
+                                            {
+                                                <i class="fas fa-check"></i>
+                                            }
+                                            else
+                                            {
+                                                <span>@emojis[i]</span>
+                                            }
+                                        </div>
+                                        <div class="step-label @lcls">@labels[i]</div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong><i class="fas fa-user"></i> Cliente:</strong> @Model.IdClienteNavigation?.Nombre @Model.IdClienteNavigation?.Apellido</p>
+                            <p><strong><i class="fas fa-home"></i> Domicilio:</strong> @Model.IdClienteNavigation?.Domicilio</p>
+                            <p><strong><i class="fas fa-phone"></i> Teléfono:</strong> @Model.IdClienteNavigation?.NumTelefono</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong><i class="fas fa-calendar-alt"></i> Fecha:</strong> @Model.FechaPedido?.ToString("dd/MM/yyyy HH:mm")</p>
+                            <p><strong><i class="fas fa-truck"></i> Entrega:</strong> @Model.ModoEntrega</p>
+                            @if (!string.IsNullOrEmpty(Model.Observaciones))
+                            {
+                                <p><strong><i class="fas fa-comment"></i> Obs.:</strong> @Model.Observaciones</p>
+                            }
+                        </div>
+                    </div>
+
+                    <hr />
+                    <h5 class="mt-2"><i class="fas fa-shopping-basket"></i> Productos:</h5>
+                    <ul class="list-group list-group-flush">
+                        @foreach (var item in Model.DetallePedidos)
+                        {
+                            var subtotal = item.Subtotal > 0 ? item.Subtotal : (item.PrecioUnitario * item.Cantidad);
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>@(item.IdProductoNavigation?.NombreProducto ?? "Producto no encontrado")</span>
+                                <span class="text-muted">@item.Cantidad x @item.PrecioUnitario.ToString("C")</span>
+                                <span class="fw-bold">@subtotal.ToString("C")</span>
+                            </li>
+                        }
+                    </ul>
+                    <h4 class="text-end mt-3 text-success">Total: @Model.MontoTotal?.ToString("C")</h4>
+                </div>
+            </div>
+        </div>
+
+        @* ── Columna derecha: acciones ── *@
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-cogs"></i> Estado y Acciones</h5>
+                </div>
+                <div class="card-body">
+
+                    @* Badge de estado *@
+                    <div class="text-center mb-3">
+                        <span class="badge @badgeEstado fs-5 px-3 py-2">@Model.EstadoPedido</span>
+                    </div>
+
+                    @* Sección Repartidor (en reparto) *@
+                    @if (Model.EstadoPedido == "En reparto")
+                    {
+                        <div class="alert @(Model.Repartidor != null ? "alert-success" : "alert-secondary") mb-3">
+                            <strong><i class="fas fa-motorcycle"></i> Repartidor:</strong><br />
+                            @if (Model.Repartidor != null)
+                            {
+                                var nombreRep = (!string.IsNullOrWhiteSpace(Model.Repartidor.Apellido)
+                                    || !string.IsNullOrWhiteSpace(Model.Repartidor.Nombre))
+                                    ? $"{Model.Repartidor.Apellido} {Model.Repartidor.Nombre}".Trim()
+                                    : (Model.Repartidor.Usuario?.NombreUsuario ?? "N/A");
+                                <span class="fs-5 fw-bold">@nombreRep</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Sin asignar</span>
+                            }
+                        </div>
+                    }
+
+                    @* Estado EsperandoRepartidor *@
+                    @if (Model.EstadoPedido == "EsperandoRepartidor")
+                    {
+                        <div class="alert alert-secondary text-center mb-3">
+                            <i class="fas fa-hourglass-half fa-2x"></i>
+                            <p class="mb-0 fw-bold mt-1">En espera de repartidor disponible</p>
+                        </div>
+                    }
+
+                    <hr />
+
+                    @* ── Acciones para Repartidor ── *@
+                    @if (esRepartidor && Model.EstadoPedido == "En reparto")
+                    {
+                        <form asp-action="CambiarEstado" method="post" class="d-grid">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.NumPedido" />
+                            <input type="hidden" name="nuevoEstado" value="Entregado" />
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-check-circle"></i> Marcar como Entregado
+                            </button>
+                        </form>
+                    }
+
+                    @* ── Acciones para Admin/Vendedor/SuperAdmin ── *@
+                    @if (puedeAsignar && Model.EstadoPedido != "Entregado" && Model.EstadoPedido != "Cancelado")
+                    {
+                        <div class="d-grid gap-2 mt-2">
+
+                            @* ★ BOTÓN: Solicitar / Re-solicitar Repartidor *@
+                            @if (mostrarBtnSolicitarRepartidor)
+                            {
+                                <button type="button"
+                                        id="btn-solicitar-repartidor-detalle"
+                                        class="btn btn-info text-white"
+                                        onclick="solicitarRepartidorDetalle(@Model.NumPedido, this)">
+                                    <i class="fas fa-broadcast-tower me-1"></i>
+                                    @(Model.EstadoPedido == "EsperandoRepartidor" ? "Re-solicitar Repartidor" : "Solicitar Repartidor")
+                                </button>
+                            }
+
+                            @* ★ BOTÓN: Para Retirar *@
+                            @if (mostrarBtnParaRetirar)
+                            {
+                                <button type="button"
+                                        id="btn-para-retirar-detalle"
+                                        class="btn btn-warning text-dark"
+                                        onclick="cambiarEstadoDetalle(@Model.NumPedido, 'Para retirar', this)">
+                                    <i class="fas fa-store me-1"></i> Pasar a Para Retirar
+                                </button>
+                            }
+
+                            @* ★ BOTÓN: Marcar Entregado (admin/superadmin) *@
+                            @if (mostrarBtnEntregado)
+                            {
+                                <button type="button"
+                                        class="btn btn-success"
+                                        onclick="confirmarCambioEstadoDetalle(@Model.NumPedido, 'Entregado', '¿Marcar este pedido como Entregado?', this)">
+                                    <i class="fas fa-check-circle me-1"></i> Marcar Entregado
+                                </button>
+                            }
+
+                            @* Reasignar repartidor (domicilio, en reparto) *@
+                            @if (esDomicilio && Model.EstadoPedido == "En reparto")
+                            {
+                                <hr />
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-motorcycle"></i> Cambiar repartidor:
+                                </label>
+                                <form asp-action="AsignarRepartidor" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="idPedido" value="@Model.NumPedido" />
+                                    <select name="idRepartidor" class="form-select mb-2"
+                                            asp-items="@(ViewData["RepartidoresList"] as Microsoft.AspNetCore.Mvc.Rendering.SelectList)">
+                                        <option value="">Seleccioná repartidor disponible...</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-outline-primary w-100">
+                                        <i class="fas fa-sync"></i> Reasignar
+                                    </button>
+                                </form>
+                                <hr />
+                            }
+
+                            @* Botones de cambio de estado estándar *@
+                            @if (Model.EstadoPedido != "Pendiente")
+                            {
+                                <button type="button" class="btn btn-warning text-dark"
+                                        onclick="cambiarEstadoDetalle(@Model.NumPedido, 'Pendiente', this)">
+                                    <span class="badge bg-warning text-dark me-1">●</span> Volver a Pendiente
+                                </button>
+                            }
+                            @if (Model.EstadoPedido != "En preparación"
+                                && Model.EstadoPedido != "En reparto"
+                                && Model.EstadoPedido != "Para retirar"
+                                && Model.EstadoPedido != "Entregado")
+                            {
+                                <button type="button" class="btn btn-info text-dark"
+                                        onclick="cambiarEstadoDetalle(@Model.NumPedido, 'En preparación', this)">
+                                    <span class="badge bg-info text-dark me-1">●</span> En preparación
+                                </button>
+                            }
+
+                            <hr class="mt-2 mb-2" />
+                            <button type="button" class="btn btn-danger"
+                                    onclick="confirmarCambioEstadoDetalle(@Model.NumPedido, 'Cancelado', '¿Cancelar este pedido?', this)">
+                                <i class="fas fa-times"></i> Cancelar Pedido
+                            </button>
+
+                        </div>
+                    }
+
+                    @if (Model.EstadoPedido == "Entregado")
+                    {
+                        <div class="alert alert-success text-center">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                            <p class="mb-0 fw-bold mt-1">Pedido entregado</p>
+                        </div>
+                    }
+                    @if (Model.EstadoPedido == "Cancelado")
+                    {
+                        <div class="alert alert-danger text-center">
+                            <i class="fas fa-times-circle fa-2x"></i>
+                            <p class="mb-0 fw-bold mt-1">Pedido cancelado</p>
+                        </div>
+                    }
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-2 d-flex gap-2">
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Volver a la lista
+        </a>
+        @if (esAdminOSuperAdmin)
+        {
+            <a asp-area="Admin" asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">
+                <i class="fas fa-home"></i> Panel
+            </a>
+        }
+    </div>
+</div>
+
+@* ── Toast de notificaciones (necesario para mostrarToast() de pedidos.js) ── *@
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+    <div class="toast align-items-center border-0" role="alert" id="toastExito" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body fw-bold" id="toastMensaje">Acción completada.</div>
+            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+        </div>
+    </div>
+</div>
+
+@* ── Modal de confirmación (necesario para abrirModalConfirmacion() de pedidos.js) ── *@
+<partial name="_ModalConfirmacionGlobal" />
+
+@* ── Estilos del stepper ── *@
+<style>
+.stepper-outer {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    padding: 8px 0 4px;
+}
+.stepper-track {
+    position: absolute;
+    top: 23px;
+    /* ★ FIX: offset = radio del círculo (46px / 2 = 23px).
+       Así fill=0% cae en el centro del primer ícono
+       y fill=100% en el centro del último. */
+    left: 23px; right: 23px;
+    height: 4px;
+    background: #dee2e6;
+    border-radius: 2px;
+    z-index: 0;
+}
+.stepper-fill {
+    position: absolute;
+    top: 0; left: 0;
+    height: 4px;
+    background: #198754;
+    border-radius: 2px;
+    transition: width .6s ease;
+}
+.stepper-steps {
+    display: flex;
+    width: 100%;
+    position: relative;
+    z-index: 1;
+}
+.stepper-step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.step-circle {
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    border: 3px solid #dee2e6;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    transition: all .3s ease;
+    line-height: 1;
+}
+.step-circle.done { background: #198754; border-color: #198754; color: #fff; font-size: .85rem; }
+.step-circle.now  { background: #fff; border-color: #198754; box-shadow: 0 0 0 5px rgba(25,135,84,.18); }
+.step-circle.wait { color: #adb5bd; }
+.step-label {
+    margin-top: 7px;
+    font-size: .72rem;
+    text-align: center;
+    color: #6c757d;
+    max-width: 72px;
+    line-height: 1.25;
+}
+.step-label.lbl-now  { color: #198754; font-weight: 700; }
+.step-label.lbl-done { color: #198754; }
+</style>
+
+@section Scripts {
+    @*
+        ★ FIX: Mismo orden que Index.cshtml:
+          1. Definir variables globales window.* PRIMERO
+          2. Cargar SignalR
+          3. Cargar pedidos.js (que usa DOMContentLoaded para leer window.*)
+          4. Funciones inline específicas de esta vista
+    *@
+    <script>
+        window.puedeAsignar       = @(puedeAsignar ? "true" : "false");
+        window.esRepartidor       = @(esRepartidor ? "true" : "false");
+        window.esAdminOSuperAdmin = @(esAdminOSuperAdmin ? "true" : "false");
+        window.rolActual          = "@(esRepartidor ? "repartidor" : puedeAsignar ? "admin" : "vendedor")";
+        window.disponibilidadActual = "@(ViewBag.DisponibilidadActual ?? "Inactivo")";
+        window.repartidorId       = @(ViewBag.RepartidorId ?? 0);
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
+    <script src="~/js/pedidos.js" asp-append-version="true"></script>
+
+    <script>
+        /**
+         * Solicitar repartidor desde la vista Detalle.
+         * Delega a solicitarRepartidor() de pedidos.js (maneja XSRF y fetchJson).
+         */
+        async function solicitarRepartidorDetalle(numPedido, btn) {
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Enviando...';
+            }
+            try {
+                await solicitarRepartidor(numPedido);
+                mostrarToast(`Alerta enviada a los repartidores para el pedido #${numPedido} 📡`);
+                if (btn) {
+                    btn.innerHTML = '<i class="fas fa-hourglass-half me-1"></i> Solicitud enviada';
+                    btn.className = btn.className.replace('btn-info', 'btn-warning');
+                    btn.className = btn.className.replace('text-white', 'text-dark');
+                    setTimeout(() => {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-broadcast-tower me-1"></i> Re-solicitar';
+                        btn.className = btn.className.replace('btn-warning', 'btn-info');
+                        btn.className = btn.className.replace('text-dark', 'text-white');
+                    }, 10000);
+                }
+            } catch (err) {
+                mostrarToast(err.message, false);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-broadcast-tower me-1"></i> Solicitar Repartidor';
+                }
+            }
+        }
+
+        /**
+         * Cambiar estado desde la vista Detalle.
+         * Delega a cambiarEstado() de pedidos.js. Recarga la página al tener éxito.
+         */
+        async function cambiarEstadoDetalle(numPedido, nuevoEstado, btn) {
+            const textoOriginal = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            }
+            try {
+                await cambiarEstado(numPedido, nuevoEstado);
+                mostrarToast(`Estado actualizado a "${nuevoEstado}" ✔`);
+                setTimeout(() => location.reload(), 1000);
+            } catch (err) {
+                mostrarToast(err.message, false);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = textoOriginal;
+                }
+            }
+        }
+
+        /**
+         * Mostrar modal de confirmación antes de una acción crítica.
+         * Usa abrirModalConfirmacion() de pedidos.js.
+         */
+        function confirmarCambioEstadoDetalle(numPedido, nuevoEstado, mensaje, btn) {
+            abrirModalConfirmacion(
+                nuevoEstado === 'Cancelado' ? '⚠️ Cancelar Pedido' : '✅ Confirmar acción',
+                mensaje,
+                () => cambiarEstadoDetalle(numPedido, nuevoEstado, btn)
+            );
+        }
+    </script>
+}
+
+================

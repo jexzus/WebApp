@@ -2,10 +2,9 @@
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-using AppWeb1.Models;
 using System.Globalization;
 
-namespace AppWeb1.Helpers
+namespace AppWeb1.Models
 {
     public static class ExportHelper
     {

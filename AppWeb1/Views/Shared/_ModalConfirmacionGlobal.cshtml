@@ -1,4 +1,8 @@
-﻿<!-- Views/Shared/_ModalConfirmacionGlobal.cshtml -->
+﻿@* ============================================================ *@
+@* ARCHIVO: Views/Shared/_ModalConfirmacionGlobal.cshtml        *@
+@* ============================================================ *@
+
+@* ── MODAL 1: Confirmación general ── *@
 <div class="modal fade" id="modalConfirmacion" tabindex="-1" aria-labelledby="tituloConfirmacion" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border border-warning shadow">
@@ -11,7 +15,45 @@
             </div>
             <div class="modal-footer bg-light">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-danger" id="btnConfirmarAccion">Confirmar</button>
+                <button type="button" class="btn btn-danger fw-bold" id="btnConfirmarAccion">
+                    <i class="fas fa-check"></i> Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── MODAL 2: Selección de Repartidor (se abre tras confirmar "En reparto") ── *@
+<div class="modal fade" id="modalSeleccionRepartidor" tabindex="-1" aria-labelledby="tituloSeleccionRepartidor" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border border-primary shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="tituloSeleccionRepartidor">
+                    <i class="fas fa-motorcycle"></i> Asignar Repartidor
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-3" id="subtituloSeleccionRepartidor">
+                    El pedido pasará a <strong>"En reparto"</strong>. Seleccioná el repartidor a asignar.
+                </p>
+                <label for="dropdownRepartidores" class="form-label fw-bold">Repartidor disponible:</label>
+                <select id="dropdownRepartidores" class="form-select form-select-lg">
+                    <option value="0">— Seleccioná un repartidor —</option>
+                    @* Las opciones se llenan dinámicamente desde JS con los datos del ViewData *@
+                </select>
+                <div id="alertaSinRepartidores" class="alert alert-warning mt-3 d-none">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    No hay repartidores disponibles en este momento. Podés poner el pedido en reparto sin asignar, o esperar a que haya uno disponible.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" id="btnCancelarSeleccionRepartidor" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-primary fw-bold" id="btnConfirmarRepartidor">
+                    <i class="fas fa-check-circle"></i> Confirmar asignación
+                </button>
             </div>
         </div>
     </div>

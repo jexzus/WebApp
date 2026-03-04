@@ -1,0 +1,61 @@
+@model AppWeb1.Models.Producto
+@{
+    ViewData["Title"] = "Eliminar Producto";
+}
+
+<div class="container mt-4">
+    <h2>Eliminar Producto</h2>
+
+    <div class="alert alert-warning" role="alert">
+        <i class="fas fa-exclamation-triangle"></i>
+        <strong>¿Estás seguro que deseás eliminar este producto?</strong>
+        <p class="mb-0 mt-2">Esta acción no se puede deshacer.</p>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Nombre</dt>
+                <dd class="col-sm-9">@Model.NombreProducto</dd>
+
+                <dt class="col-sm-3">Descripción</dt>
+                <dd class="col-sm-9">@Model.Descripcion</dd>
+
+                <dt class="col-sm-3">Precio</dt>
+                <dd class="col-sm-9">
+                    <strong class="text-success">@Model.Precio?.ToString("C")</strong>
+                </dd>
+
+                <dt class="col-sm-3">Imagen</dt>
+                <dd class="col-sm-9">
+                    @if (!string.IsNullOrEmpty(Model.Imagen))
+                    {
+                        <img src="~/imagenes/@Model.Imagen" class="img-thumbnail"
+                             style="max-width:300px;" alt="@Model.NombreProducto" />
+                    }
+                    else
+                    {
+                        <div class="text-muted">
+                            <i class="fas fa-image fa-3x"></i>
+                            <p>Sin imagen</p>
+                        </div>
+                    }
+                </dd>
+            </dl>
+        </div>
+    </div>
+
+    <form asp-area="Admin" asp-controller="Catalogo" asp-action="Delete"
+          method="post" class="mt-3">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="IdProducto" />
+
+        <button type="submit" class="btn btn-danger">
+            <i class="fas fa-trash"></i> Confirmar Eliminación
+        </button>
+        <a asp-area="Admin" asp-controller="Catalogo" asp-action="Index"
+           class="btn btn-secondary">
+            <i class="fas fa-times"></i> Cancelar
+        </a>
+    </form>
+</div>

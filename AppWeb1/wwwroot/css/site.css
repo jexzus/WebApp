@@ -1,35 +1,742 @@
+﻿/* ============================================================
+   site.css — Tema Global Dark + Glassmorphism
+   AppWeb1 / JAM Burgers
+   ============================================================ */
+
+/* ── 1. TIPOGRAFÍA RESPONSIVA ── */
 html {
-  font-size: 14px;
+    font-size: 14px;
+    position: relative;
+    min-height: 100%;
 }
 
 @media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
+    html {
+        font-size: 16px;
+    }
 }
 
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
+/* ── 2. FONDO GLOBAL Y COLOR DE TEXTO ── */
+/*
+   FIX #1 — STICKY FOOTER
+   Se eliminó "height: 100%" del par html/body y se reemplaza
+   con la técnica Flexbox Sticky Footer en el body.
+   html solo necesita la imagen de fondo fija.
+*/
 html {
-  position: relative;
-  min-height: 100%;
+    margin: 0;
+    background: url("/imagenes/fondopage.jpg") no-repeat center center fixed;
+    background-size: cover;
+    color: #ffffff;
 }
 
 body {
-  margin-bottom: 60px;
+    /*
+       FIX #1 — STICKY FOOTER (Flexbox approach)
+       El body es la columna flex. El <main> crece para empujar el
+       footer siempre al final, aunque el contenido sea escaso.
+    */
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
+    /* Fondo semi-oscuro encima de la imagen para mejorar legibilidad */
+    background-color: rgba(0, 0, 0, 0.55);
+    background-blend-mode: overlay;
 }
 
+/* ── 3. FOCUS ACCESIBLE ── */
+.btn:focus,
+.btn:active:focus,
+.btn-link.nav-link:focus,
+.form-control:focus,
+.form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem rgba(255, 255, 255, 0.4), 0 0 0 0.25rem rgba(37, 140, 251, 0.6);
+    outline: none;
+}
+
+/* ── 4. TEXTOS GENERALES ── */
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+    color: #ffffff;
+}
+
+p, label, span, li, td, th, dt, dd {
+    color: #fff;
+}
+
+a {
+    color: #f9a825;
+}
+
+    a:hover {
+        color: #ffd54f;
+    }
+
+/* ── 5. NAVBAR ── */
+.navbar {
+    background: rgba(20, 20, 20, 0.80) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.navbar-brand,
+.nav-link {
+    color: #ffffff !important;
+}
+
+    .nav-link:hover {
+        color: #f9a825 !important;
+    }
+
+/* ── 6. CARDS (Glassmorphism) ── */
+.card {
+    background: rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 1rem !important;
+    color: #ffffff;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4) !important;
+    }
+
+.card-title,
+.card-text,
+.card-header,
+.card-footer {
+    color: #ffffff;
+}
+
+.card-img-top {
+    transition: transform 0.2s ease-in-out;
+    border-radius: 1rem 1rem 0 0;
+}
+
+.card:hover .card-img-top {
+    transform: scale(1.05);
+}
+
+.producto-card {
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* ── 7. MODALS (Glassmorphism) ── */
 .modal-content {
+    background: rgba(25, 25, 35, 0.85) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
     border-radius: 1rem;
+    color: #ffffff;
+}
+
+.modal-header,
+.modal-body,
+.modal-footer {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.modal-title {
+    color: #ffffff;
+}
+
+.modal-header .btn-close {
+    filter: invert(1);
 }
 
 .modal-header.bg-warning {
-    background-color: #ffc107 !important;
+    background: linear-gradient(135deg, #f9a825, #e65100) !important;
+    border-bottom: none;
 }
 
-.modal-footer .btn-danger {
-    background-color: #dc3545;
-    border-color: #dc3545;
+.modal-header.bg-danger {
+    background: linear-gradient(135deg, #e53935, #7b1fa2) !important;
+    border-bottom: none;
 }
+
+.modal-header.bg-success {
+    background: linear-gradient(135deg, #2e7d32, #1b5e20) !important;
+    border-bottom: none;
+}
+
+.modal-header.bg-primary {
+    background: linear-gradient(135deg, #7b1fa2, #4a148c) !important;
+    border-bottom: none;
+}
+
+/* ── 8. FORMULARIOS ── */
+.form-control,
+.form-select {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+    border-radius: 0.5rem;
+}
+
+    .form-control::placeholder {
+        color: rgba(255, 255, 255, 0.45);
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        background: rgba(255, 255, 255, 0.15) !important;
+        border-color: rgba(249, 168, 37, 0.7) !important;
+        color: #ffffff !important;
+    }
+
+.form-label {
+    color: #e8e8e8;
+    font-weight: 500;
+}
+
+/* ── 9. TABLAS (generales) ── */
+.table {
+    color: #e8e8e8;
+}
+
+    .table thead th {
+        background: rgba(255, 255, 255, 0.1);
+        color: #000000;
+        border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .table td,
+    .table th {
+        border-color: #6c757d;
+    }
+
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+    background-color: rgba(255, 255, 255, 0.04);
+    color: #e8e8e8;
+}
+
+.table-hover > tbody > tr:hover > * {
+    background-color: rgba(249, 168, 37, 0.1);
+    color: #ffffff;
+}
+
+/*
+   FIX #3 — TABLA HISTORIAL (#tablaHistorial)
+   Fondo #333 en toda la tabla, con texto e1e1e1 para contraste
+   y bordes más claros para que no se pierdan sobre el fondo oscuro.
+*/
+#tablaHistorial {
+    background-color: #333 !important;
+    border-color: #555 !important;
+}
+
+    #tablaHistorial thead th {
+        background-color: #222 !important;
+        color: #f0f0f0 !important;
+        border-color: #555 !important;
+    }
+
+    #tablaHistorial tbody tr td,
+    #tablaHistorial tbody tr th {
+        background-color: #333 !important;
+        color: #e1e1e1 !important;
+        border-color: #555 !important;
+    }
+
+    #tablaHistorial tbody tr:hover td,
+    #tablaHistorial tbody tr:hover th {
+        background-color: #444 !important;
+        color: #ffffff !important;
+    }
+
+    /* Evitar que table-striped sobreescriba el fondo de #tablaHistorial */
+    #tablaHistorial.table-striped > tbody > tr:nth-of-type(odd) > * {
+        background-color: #3a3a3a !important;
+        color: #e1e1e1 !important;
+    }
+
+/* ── 10. ALERTS ── */
+.alert {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.alert-success {
+    background: rgba(46, 125, 50, 0.75) !important;
+    color: #c8e6c9;
+    border-color: rgba(46, 125, 50, 0.5) !important;
+}
+
+.alert-danger {
+    background: rgba(183, 28, 28, 0.75) !important;
+    color: #ffcdd2;
+    border-color: rgba(183, 28, 28, 0.5) !important;
+}
+
+.alert-warning {
+    background: rgba(230, 81, 0, 0.75) !important;
+    color: #ffe0b2;
+    border-color: rgba(230, 81, 0, 0.5) !important;
+}
+
+.alert-info {
+    background: #00000061 !important;
+    color: #b3e5fc;
+    border-color: #dc3545ba !important;
+}
+
+/* ────────────────────────────────────────────────────────────necesito q
+   11. SISTEMA DE BOTONES EN DEGRADADO
+   ──────────────────────────────────────────────────────────── */
+
+/* ── Base de todos los botones ── */
+.btn {
+    border: none !important;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+    .btn:hover {
+        transform: scale(1.04);
+        filter: brightness(1.12);
+    }
+
+    .btn:active {
+        transform: scale(0.97);
+        filter: brightness(0.95);
+    }
+
+/* ── Verde (Aceptar / Guardar / Confirmar / Success / Primary) ── */
+.btn-success,
+.btn-primary {
+    background: linear-gradient(135deg, #2e7d32, #1b5e20) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(46, 125, 50, 0.45);
+}
+
+    .btn-success:hover,
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #388e3c, #2e7d32) !important;
+        color: #ffffff !important;
+        box-shadow: 0 6px 20px rgba(46, 125, 50, 0.6);
+    }
+
+/* ── Amarillo/Naranja (Editar / Warning) ── */
+.btn-warning {
+    background: linear-gradient(135deg, #f9a825, #e65100) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(230, 81, 0, 0.45);
+}
+
+    .btn-warning:hover {
+        background: linear-gradient(135deg, #fbc02d, #f57c00) !important;
+        color: #ffffff !important;
+        box-shadow: 0 6px 20px rgba(230, 81, 0, 0.6);
+    }
+
+/* ── Rojo (Eliminar / Danger) ── */
+.btn-danger {
+    background: linear-gradient(135deg, #c62828, #6a1212) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(198, 40, 40, 0.45);
+    border-color: transparent !important;
+}
+
+    .btn-danger:hover {
+        background: linear-gradient(135deg, #e53935, #b71c1c) !important;
+        color: #ffffff !important;
+        box-shadow: 0 6px 20px rgba(198, 40, 40, 0.6);
+    }
+
+/* ── Violeta (Acción especial / Info) ── */
+.btn-info,
+.btn-purple {
+    background: linear-gradient(135deg, #7b1fa2, #4a148c) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(123, 31, 162, 0.45);
+}
+
+    .btn-info:hover,
+    .btn-purple:hover {
+        background: linear-gradient(135deg, #9c27b0, #6a1b9a) !important;
+        color: #ffffff !important;
+        box-shadow: 0 6px 20px rgba(123, 31, 162, 0.6);
+    }
+
+/* ── Secundario (Cancelar / Neutral) ── */
+.btn-secondary {
+    background: linear-gradient(135deg, #546e7a, #263238) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(38, 50, 56, 0.5);
+}
+
+    .btn-secondary:hover {
+        background: linear-gradient(135deg, #607d8b, #37474f) !important;
+        color: #ffffff !important;
+        box-shadow: 0 6px 18px rgba(38, 50, 56, 0.65);
+    }
+
+/* ── Outline (para casos donde se use) ── */
+.btn-outline-secondary,
+.btn-outline-light {
+    border: 1.5px solid rgba(255, 255, 255, 0.4) !important;
+    color: #ffffff !important;
+    background: transparent !important;
+}
+
+    .btn-outline-secondary:hover,
+    .btn-outline-light:hover {
+        background: rgba(255, 255, 255, 0.12) !important;
+        border-color: rgba(255, 255, 255, 0.6) !important;
+        transform: scale(1.03);
+    }
+
+/* ── btn-login (página de login) ── */
+.btn-login {
+    background: linear-gradient(90deg, #f83600, #f9d423) !important;
+    border: none !important;
+    border-radius: 30px;
+    padding: 10px 25px;
+    color: #ffffff !important;
+    font-weight: bold;
+    box-shadow: 0 4px 16px rgba(248, 54, 0, 0.45);
+    transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+    .btn-login:hover {
+        background: linear-gradient(90deg, #f12711, #f5af19) !important;
+        color: #ffffff !important;
+        filter: brightness(1.08);
+        box-shadow: 0 6px 20px rgba(248, 54, 0, 0.6);
+        transform: scale(1.04);
+    }
+
+/* ── btn-auth (páginas de registro/recuperación) ── */
+.btn-auth {
+    background: linear-gradient(135deg, #2e7d32, #1b5e20) !important;
+    border: none !important;
+    border-radius: 0.75rem;
+    color: #ffffff !important;
+    font-weight: 600;
+    box-shadow: 0 4px 14px rgba(46, 125, 50, 0.45);
+    transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+    .btn-auth:hover {
+        filter: brightness(1.1);
+        transform: scale(1.02);
+        box-shadow: 0 6px 20px rgba(46, 125, 50, 0.6);
+    }
+
+/* ────────────────────────────────────────────────────────────
+   12. PÁGINA DE LOGIN
+   ──────────────────────────────────────────────────────────── */
+body.login-page {
+    height: 100%;
+    margin: 0;
+    background: url("/imagenes/fondopage.jpg") no-repeat center center fixed !important;
+    background-size: cover !important;
+    background-color: transparent !important;
+}
+
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.login-box {
+    background: rgba(20, 20, 20, 0.75);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    max-width: 370px;
+    width: 100%;
+    text-align: center;
+}
+
+    .login-box h3 {
+        color: #ffffff;
+    }
+
+.login-logo {
+    width: 150px;
+    height: 150px;
+    margin-bottom: 20px;
+}
+
+.login-box .form-control {
+    border-radius: 30px;
+    padding: 10px 20px;
+    margin-bottom: 10px;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+}
+
+    .login-box .form-control::placeholder {
+        color: rgba(255, 255, 255, 0.45);
+    }
+
+.registro-link a {
+    color: #f9d423 !important;
+    font-weight: bold !important;
+    text-decoration: none !important;
+}
+
+    .registro-link a:hover {
+        color: #ffa000 !important;
+        text-decoration: underline !important;
+    }
+
+/* ────────────────────────────────────────────────────────────
+   13. PÁGINAS DE AUTH (PreRegistro, RegistrarCliente, etc.)
+   ──────────────────────────────────────────────────────────── */
+.auth-page {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem 1rem;
+}
+
+.auth-card {
+    background: #00000070;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 1.25rem;
+    padding: 2.5rem 2rem;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.auth-title {
+    color: #ffffff;
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.auth-subtitle {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.92rem;
+}
+
+.auth-footer a {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9rem;
+}
+
+    .auth-footer a:hover {
+        color: #f9a825;
+    }
+
+/* ── Inputs dentro del auth-card ── */
+.auth-card .form-control,
+.auth-card .form-select {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: #ffffff !important;
+}
+
+    .auth-card .form-control:focus,
+    .auth-card .form-select:focus {
+        background: rgba(255, 255, 255, 0.13) !important;
+        border-color: rgba(249, 168, 37, 0.7) !important;
+    }
+
+.auth-card .form-label {
+    color: #e0e0e0;
+}
+
+.auth-card .form-text {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* ────────────────────────────────────────────────────────────
+   14. BADGES
+   ──────────────────────────────────────────────────────────── */
+.badge.bg-success {
+    background: linear-gradient(135deg, #2e7d32, #1b5e20) !important;
+}
+
+.badge.bg-danger {
+    background: linear-gradient(135deg, #c62828, #6a1212) !important;
+}
+
+.badge.bg-warning {
+    background: linear-gradient(135deg, #f9a825, #e65100) !important;
+    color: #ffffff !important;
+}
+
+.badge.bg-info {
+    background: linear-gradient(135deg, #7b1fa2, #4a148c) !important;
+}
+
+/* ────────────────────────────────────────────────────────────
+   15. DROPDOWN MENUS
+   ──────────────────────────────────────────────────────────── */
+.dropdown-menu {
+    background: rgba(20, 20, 30, 0.92) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 0.75rem;
+}
+
+.dropdown-item {
+    color: #e0e0e0 !important;
+}
+
+    .dropdown-item:hover,
+    .dropdown-item:focus {
+        background: rgba(255, 255, 255, 0.1) !important;
+        color: #ffffff !important;
+    }
+
+/* ────────────────────────────────────────────────────────────
+   16. FOOTER
+   FIX #1 — STICKY FOOTER
+   Se eliminó "position: absolute" implícita. Con el body flex
+   el footer queda siempre al fondo. Se agrega text-center.
+   ──────────────────────────────────────────────────────────── */
+footer,
+.footer {
+    /* FIX #1: el footer no crece; el main (flex-grow:1) llena el espacio */
+    flex-shrink: 0;
+    background: rgba(10, 10, 10, 0.85) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: rgba(255, 255, 255, 0.6) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    /* FIX #1: centrado de texto */
+    text-align: center;
+    padding: 1rem 0;
+}
+
+/* ────────────────────────────────────────────────────────────
+   17. TOASTS
+   ──────────────────────────────────────────────────────────── */
+.toast-body {
+    color: #000000 !important;
+    font-weight: bold !important;
+}
+
+.toast {
+    border-radius: 0.75rem !important;
+}
+
+/* ────────────────────────────────────────────────────────────
+   18. SCROLLBAR (opcional — navegadores webkit)
+   ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(249, 168, 37, 0.5);
+    border-radius: 4px;
+}
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(249, 168, 37, 0.8);
+    }
+
+/* ────────────────────────────────────────────────────────────
+   19. FONDO-TRANSPARENCIA
+   FIX #2 — OVERLAY DE FONDO COMPLETO
+   Esta clase se usa como wrapper del contenido de la página
+   cuando se necesita un panel oscuro sobre la imagen de fondo.
+   Cubre el 100% del viewport Y del documento, nunca se corta.
+   ──────────────────────────────────────────────────────────── */
+.fondo-transparencia {
+    /*
+       Se posiciona relativa para ser contenedor de hijos absolutos.
+       El min-height: 100% hereda del body (min-height: 100vh).
+       Al usarse como wrapper directo del contenido, crece con el
+       documento y nunca se corta aunque el scroll sea largo.
+    */
+    position: relative;
+    min-height: 100vh;
+    background-color: rgba(0, 0, 0, 0.85);
+    /* Asegura que el fondo se extienda detrás de cualquier padding/margen */
+    box-sizing: border-box;
+}
+
+    /*
+   Alternativa con pseudo-elemento ::before para páginas con
+   scroll muy largo (evita el corte cuando el contenido supera
+   100vh). Cubre siempre la totalidad del documento.
+*/
+    .fondo-transparencia::before {
+        content: "";
+        position: fixed; /* fixed cubre siempre el viewport completo */
+        inset: 0; /* top:0 right:0 bottom:0 left:0 */
+        background-color: rgba(0, 0, 0, 0.85);
+        z-index: -1; /* queda detrás del contenido */
+        pointer-events: none;
+    }
+
+/* ────────────────────────────────────────────────────────────
+   20. SWEETALERT2 — ESTILOS LOGOUT / CONFIRMACIÓN
+   FIX #4 — Popup blanco puro, icono de exclamación en rojo.
+   ──────────────────────────────────────────────────────────── */
+
+/* Contenedor del popup de logout */
+.swal2-logout-popup.swal2-popup,
+.swal2-popup.swal-logout {
+    background: #ffffff !important;
+    color: #1a1a1a !important;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 1rem !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18) !important;
+}
+
+/*
+   FIX #4 — Icono "warning" (exclamación) → color rojo (danger).
+   SweetAlert2 usa variables CSS internas para colorear el ícono.
+   Se sobreescriben aquí con alta especificidad.
+*/
+.swal2-popup .swal2-icon.swal2-warning {
+    border-color: #dc3545 !important;
+    color: #dc3545 !important;
+}
+
+    .swal2-popup .swal2-icon.swal2-warning .swal2-icon-content {
+        color: #dc3545 !important;
+    }
+
+/*
+   Regla genérica que aplica en cualquier popup de logout
+   sin necesidad de clase personalizada en el Swal.fire({}).
+   Cubre el caso del confirmarLogout() en _Layout.cshtml.
+*/
+.swal2-container .swal2-popup {
+    background: #ffffff !important;
+    color: #1a1a1a !important;
+}
+
+/* Icono warning (exclamación) siempre en rojo */
+.swal2-icon.swal2-warning {
+    border-color: #dc3545 !important;
+    color: #dc3545 !important;
+}
+
+    .swal2-icon.swal2-warning .swal2-icon-content {
+        color: #dc3545 !important;
+    }

@@ -1,0 +1,515 @@
+@* ============================================================ *@
+@* ARCHIVO: Areas/Admin/Views/Pedidos/Index.cshtml              *@
+@* CAMBIOS:                                                     *@
+@*   ★ Filtro "Todos" en el select de estado                   *@
+@*   ★ Estado "Para retirar" en badges y transiciones          *@
+@*   ★ Botón "Revertir a En preparación" (solo Admin/SuperAdmin)*@
+@*   ★ Historial paginado del repartidor (Bootstrap pagination) *@
+@*   ★ Variables JS para actualización reactiva de botones     *@
+@* ============================================================ *@
+@model List<AppWeb1.Models.Pedido>
+@{
+    ViewData["Title"] = "Gestión de Pedidos";
+
+    var pedidosOrdenados = Model
+        .OrderBy(p => p.EstadoPedido == "Entregado" ? 1 : p.EstadoPedido == "Cancelado" ? 2 : 0)
+        .ThenByDescending(p => p.FechaPedido)
+        .ToList();
+
+    var puedeAsignar         = ViewBag.PuedeAsignarDelivery as bool? ?? false;
+    var esRepartidor         = ViewBag.EsRepartidor as bool? ?? false;
+    var disponibilidadActual = ViewBag.DisponibilidadActual as string ?? "Inactivo";
+    var repartidorId         = ViewBag.RepartidorId as int?;
+
+    // ★ NUEVO: historial paginado (solo repartidor)
+    var historial      = ViewBag.Historial      as List<AppWeb1.Models.Pedido> ?? new List<AppWeb1.Models.Pedido>();
+    var paginaActual   = ViewBag.PaginaActual   as int? ?? 1;
+    var totalPaginas   = ViewBag.TotalPaginas   as int? ?? 0;
+    var totalHistorial = ViewBag.TotalHistorial as int? ?? 0;
+
+    // ★ NUEVO: determinar si puede revertir (solo Admin y SuperAdmin — el Vendedor NO)
+    // Se lee desde ViewBag (seteado en el controller) para evitar acceso directo a HttpContext en la vista
+    var esAdminOSuperAdmin = ViewBag.EsAdminOSuperAdmin as bool? ?? false;
+}
+
+@functions {
+    static List<(string Estado, string Badge, string Icono)> TransicionesValidas(string estadoActual, string? modoEntrega)
+    {
+        bool esDomicilio = modoEntrega?.Equals("Domicilio", StringComparison.OrdinalIgnoreCase) == true;
+        var opciones = new List<(string, string, string)>();
+        switch (estadoActual)
+        {
+            case "Pendiente":
+                opciones.Add(("En preparación", "bg-info text-dark", "fa-fire"));
+                opciones.Add(("Cancelado", "bg-danger", "fa-times"));
+                break;
+            case "En preparación":
+                opciones.Add(("Pendiente", "bg-warning text-dark", "fa-undo"));
+                if (esDomicilio)
+                    opciones.Add(("En reparto", "bg-primary", "fa-motorcycle"));
+                else
+                    // ★ NUEVO: retiro en local → Para retirar
+                    opciones.Add(("Para retirar", "bg-warning text-dark", "fa-store"));
+                opciones.Add(("Cancelado", "bg-danger", "fa-times"));
+                break;
+            case "EsperandoRepartidor":
+                // ★ Puede volver a "En preparación" (cancela la búsqueda) o Cancelar
+                opciones.Add(("En preparación", "bg-info text-dark", "fa-undo"));
+                opciones.Add(("Cancelado", "bg-danger", "fa-times"));
+                break;
+            case "Para retirar":
+                // ★ NUEVO estado
+                opciones.Add(("Entregado", "bg-success", "fa-check-circle"));
+                opciones.Add(("Cancelado", "bg-danger", "fa-times"));
+                break;
+            case "En reparto":
+                opciones.Add(("Entregado", "bg-success", "fa-check-circle"));
+                opciones.Add(("Cancelado", "bg-danger", "fa-times"));
+                break;
+        }
+        return opciones;
+    }
+
+    static string BadgeEstado(string estado) => estado switch
+    {
+        "Pendiente"              => "bg-warning text-dark",
+        "En preparación"         => "bg-info text-dark",
+        "EsperandoRepartidor"    => "bg-secondary",  // ★ búsqueda activa
+        "Para retirar"           => "bg-warning text-dark",
+        "En reparto"             => "bg-primary",
+        "Entregado"              => "bg-success",
+        "Cancelado"              => "bg-danger",
+        _                        => "bg-secondary"
+    };
+}
+
+@* ── TÍTULO ── *@
+<h2 class="mb-4">
+    @if (esRepartidor)
+    {
+        <i class="fas fa-motorcycle"></i> <span>Mis Pedidos Asignados</span>
+    }
+    else
+    {
+        <i class="fas fa-clipboard-list"></i> <span>Gestión de Pedidos</span>
+    }
+</h2>
+
+@* ── Barra de herramientas (solo admin/vendedor) ── *@
+@if (!esRepartidor)
+{
+    <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+        <div class="d-flex gap-2">
+            <button class="btn btn-warning" onclick="imprimirTabla()">
+                <i class="fas fa-print"></i> Imprimir
+            </button>
+            <form method="post" asp-action="DescargarExcel" class="d-inline">
+                @Html.AntiForgeryToken()
+                <button class="btn btn-success" type="submit">
+                    <i class="fas fa-file-excel"></i> Excel
+                </button>
+            </form>
+        </div>
+        <a asp-area="Admin" asp-controller="Home" asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Volver al Panel
+        </a>
+    </div>
+}
+
+@* ── Panel de disponibilidad del Repartidor ── *@
+@if (esRepartidor)
+{
+    <div class="card shadow-sm mb-4 no-print border-primary" id="panelDisponibilidad">
+        <div class="card-body">
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <span class="fw-bold fs-6">Mi disponibilidad:</span>
+                @{
+                    var badgeDisp = disponibilidadActual switch
+                    {
+                        "Activo"  => "bg-success",
+                        "Ocupado" => "bg-warning text-dark",
+                        _         => "bg-secondary"
+                    };
+                    var iconoDisp = disponibilidadActual switch
+                    {
+                        "Activo"  => "fa-check-circle",
+                        "Ocupado" => "fa-motorcycle",
+                        _         => "fa-pause-circle"
+                    };
+                }
+                <span class="badge @badgeDisp fs-6 px-3 py-2" id="badgeDisponibilidadActual">
+                    <i class="fas @iconoDisp me-1"></i>
+                    <span id="textoDisponibilidad">@disponibilidadActual</span>
+                </span>
+                <div class="btn-group" role="group">
+                    <button type="button"
+                            class="btn @(disponibilidadActual == "Activo" ? "btn-success active" : "btn-outline-success") btn-disponibilidad"
+                            data-valor="Activo" id="btnActivo">
+                        <i class="fas fa-check-circle"></i> Activo
+                    </button>
+                    <button type="button"
+                            class="btn @(disponibilidadActual == "Inactivo" ? "btn-secondary active" : "btn-outline-secondary") btn-disponibilidad"
+                            data-valor="Inactivo" id="btnInactivo">
+                        <i class="fas fa-pause-circle"></i> Inactivo
+                    </button>
+                </div>
+                @if (disponibilidadActual == "Ocupado")
+                {
+                    <small class="text-muted fst-italic">
+                        <i class="fas fa-info-circle"></i> Tenés un pedido activo. Terminá la entrega para volver a "Activo".
+                    </small>
+                }
+                else
+                {
+                    <small class="text-muted" id="infoDisponibilidad">
+                        Todos los repartidores ven los pedidos disponibles.
+                        Solo los <strong>Activos</strong> pueden aceptarlos.
+                    </small>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* Contenedor de alertas SignalR (modales urgentes) *@
+    <div id="contenedorAlertas" class="mb-4"></div>
+
+    @* Las solicitudes de reparto se gestionan exclusivamente mediante las alertas
+       del contenedorAlertas superior. La carga inicial en pedidos.js dispara
+       automáticamente las alertas de todos los pedidos en búsqueda al entrar. *@
+}
+
+@* ── ★ Filtros (admin/vendedor) — ahora con opción "Todos" ── *@
+@if (!esRepartidor)
+{
+    <div class="row mb-3 no-print">
+        <div class="col-md-5">
+            <label for="filtroEstado" class="form-label">Filtrar por estado:</label>
+            <select id="filtroEstado" class="form-select">
+                <option value="Todos" selected>Todos</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="En preparación">En preparación</option>
+                <option value="Para retirar">Para retirar</option>
+                <option value="En reparto">En reparto</option>
+                <option value="Entregado">Entregado</option>
+                <option value="Cancelado">Cancelado</option>
+            </select>
+        </div>
+        <div class="col-md-7">
+            <label for="buscador" class="form-label">Buscar:</label>
+            <input type="text" id="buscador" class="form-control"
+                   placeholder="Nro Pedido, Cliente, Teléfono, Domicilio...">
+        </div>
+    </div>
+}
+
+@* ── Tabla de Pedidos ── *@
+<div id="printArea">
+    <table class="table table-bordered table-hover align-middle" id="tablaPedidos">
+        <thead class="table-dark">
+            <tr>
+                <th>Nro</th>
+                <th>Cliente</th>
+                <th>Teléfono</th>
+                <th>Domicilio</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+                @if (!esRepartidor)
+                {
+                    <th>Entrega</th>
+                    <th>Delivery</th>
+                }
+                <th>Total</th>
+                <th class="no-print">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pedido in pedidosOrdenados)
+            {
+                var filaClase = pedido.EstadoPedido == "Entregado" ? "fila-entregado" : "";
+                bool esDomicilio = pedido.ModoEntrega?.Equals("Domicilio", StringComparison.OrdinalIgnoreCase) == true;
+                var transiciones = TransicionesValidas(pedido.EstadoPedido, pedido.ModoEntrega);
+                var badgeClass   = BadgeEstado(pedido.EstadoPedido);
+
+                <tr class="@filaClase"
+                    data-num="@pedido.NumPedido"
+                    data-estado="@pedido.EstadoPedido"
+                    data-modo-entrega="@pedido.ModoEntrega"
+                    data-filtro="@pedido.NumPedido @pedido.IdClienteNavigation?.Nombre @pedido.IdClienteNavigation?.Apellido @pedido.IdClienteNavigation?.NumTelefono @pedido.IdClienteNavigation?.Domicilio">
+
+                    <td class="fw-bold">@pedido.NumPedido</td>
+                    <td>@pedido.IdClienteNavigation?.Nombre @pedido.IdClienteNavigation?.Apellido</td>
+                    <td>@pedido.IdClienteNavigation?.NumTelefono</td>
+                    <td>@pedido.IdClienteNavigation?.Domicilio</td>
+                    <td>@pedido.FechaPedido?.ToString("dd/MM/yyyy HH:mm")</td>
+
+                    <td>
+                        <span class="badge @badgeClass estado-badge-@pedido.NumPedido">@pedido.EstadoPedido</span>
+                    </td>
+
+                    @if (!esRepartidor)
+                    {
+                        <td>
+                            @if (esDomicilio)
+                            {
+                                <span class="badge bg-primary"><i class="fas fa-motorcycle"></i> Domicilio</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary"><i class="fas fa-store"></i> @(pedido.ModoEntrega ?? "Local")</span>
+                            }
+                        </td>
+
+                        <td>
+                            @if (esDomicilio && pedido.EstadoPedido == "En reparto" && pedido.Repartidor != null)
+                            {
+                                var nombreRep = (!string.IsNullOrWhiteSpace(pedido.Repartidor.Apellido) || !string.IsNullOrWhiteSpace(pedido.Repartidor.Nombre))
+                                    ? $"{pedido.Repartidor.Apellido} {pedido.Repartidor.Nombre}".Trim()
+                                    : (pedido.Repartidor.Usuario?.NombreUsuario ?? "N/A");
+                                <span class="badge bg-success delivery-badge-@pedido.NumPedido">
+                                    <i class="fas fa-motorcycle"></i> @nombreRep
+                                </span>
+                            }
+                            else if (esDomicilio && pedido.EstadoPedido == "En preparación")
+                            {
+                                <span class="badge bg-secondary delivery-badge-@pedido.NumPedido">Esperando repartidor</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                    }
+
+                    <td>@((pedido.MontoTotal ?? 0m).ToString("C"))</td>
+
+                    <td class="no-print acciones-cell-@pedido.NumPedido">
+                        <div class="d-flex flex-column gap-1">
+                            <a asp-action="Detalle" asp-route-id="@pedido.NumPedido"
+                               class="btn btn-sm btn-primary">
+                                <i class="fas fa-eye"></i> Ver
+                            </a>
+
+                            @if (!esRepartidor)
+                            {
+                                @* ── Dropdown cambio de estado ── *@
+                                @if (transiciones.Count > 0)
+                                {
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-sm btn-warning dropdown-toggle"
+                                                data-bs-toggle="dropdown">
+                                            <i class="fas fa-exchange-alt"></i> Estado
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                                            @foreach (var (estado, badge, icono) in transiciones)
+                                            {
+                                                <li>
+                                                    <a class="dropdown-item cambiar-estado" href="#"
+                                                       data-pedido="@pedido.NumPedido"
+                                                       data-estado-actual="@pedido.EstadoPedido"
+                                                       data-estado="@estado"
+                                                       data-modo-entrega="@pedido.ModoEntrega">
+                                                        <span class="badge @badge me-1">
+                                                            <i class="fas @icono"></i>
+                                                        </span> @estado
+                                                    </a>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </div>
+                                }
+                                else if (pedido.EstadoPedido == "Entregado")
+                                {
+                                    <span class="badge bg-success w-100 py-1"><i class="fas fa-check-double"></i> Entregado</span>
+                                }
+                                else if (pedido.EstadoPedido == "Cancelado")
+                                {
+                                    <span class="badge bg-danger w-100 py-1"><i class="fas fa-ban"></i> Cancelado</span>
+                                }
+
+                                @* ── ★ Botón "Solicitar Repartidor" / "Esperando..." ── *@
+                                @* Persistencia basada en el EstadoPedido de la BD (no en memoria) *@
+                                @if (puedeAsignar && esDomicilio &&
+                                     (pedido.EstadoPedido == "En preparación" || pedido.EstadoPedido == "EsperandoRepartidor"))
+                                {
+                                    @if (pedido.EstadoPedido == "EsperandoRepartidor")
+                                    {
+                                        @* ── En búsqueda activa: "Esperando..." (persiste en toda navegación) ── *@
+                                        <button type="button"
+                                                class="btn btn-sm btn-warning btn-solicitar-repartidor"
+                                                data-pedido="@pedido.NumPedido"
+                                                data-esperando="true"
+                                                title="Buscando repartidor — clic para re-enviar la alerta">
+                                            <i class="fas fa-hourglass-half fa-spin"></i> Esperando...
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        @* ── Aún no solicitado ── *@
+                                        <button type="button"
+                                                class="btn btn-sm btn-info btn-solicitar-repartidor"
+                                                data-pedido="@pedido.NumPedido"
+                                                title="Enviar alerta a todos los repartidores activos">
+                                            <i class="fas fa-broadcast-tower"></i> Solicitar Repartidor
+                                        </button>
+                                    }
+                                }
+
+                                @* ── ★ NUEVO: Botón "Revertir a En preparación" (SOLO Admin/SuperAdmin) ── *@
+                                @if (esAdminOSuperAdmin && pedido.EstadoPedido == "En reparto")
+                                {
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger btn-revertir-preparacion"
+                                            data-pedido="@pedido.NumPedido"
+                                            title="Revertir a En preparación y liberar al repartidor">
+                                        <i class="fas fa-undo-alt"></i> Revertir
+                                    </button>
+                                }
+                            }
+                            else
+                            {
+                                @* ── Repartidor: solo puede marcar Entregado ── *@
+                                @if (pedido.EstadoPedido == "En reparto")
+                                {
+                                    <a class="btn btn-sm btn-success cambiar-estado"
+                                       href="#"
+                                       data-pedido="@pedido.NumPedido"
+                                       data-estado-actual="@pedido.EstadoPedido"
+                                       data-estado="Entregado"
+                                       data-modo-entrega="@pedido.ModoEntrega">
+                                        <i class="fas fa-check-circle"></i> Marcar Entregado
+                                    </a>
+                                }
+                            }
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@* ── ★ NUEVO: Historial paginado del Repartidor ── *@
+@if (esRepartidor)
+{
+    <div class="mt-5">
+        <h4 class="mb-3">
+            <i class="fas fa-history"></i> Historial de entregas
+            @if (totalHistorial > 0)
+            {
+                <span class="badge bg-secondary ms-2">@totalHistorial</span>
+            }
+        </h4>
+
+        @if (!historial.Any())
+        {
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-1"></i> Todavía no completaste ningún pedido.
+            </div>
+        }
+        else
+        {
+            <table class="table table-bordered table-hover align-middle">
+                <thead class="table-secondary">
+                    <tr>
+                        <th>Nro</th>
+                        <th>Cliente</th>
+                        <th>Fecha</th>
+                        <th>Estado</th>
+                        <th>Productos</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in historial)
+                    {
+                        var bc = BadgeEstado(p.EstadoPedido);
+                        <tr>
+                            <td class="fw-bold">@p.NumPedido</td>
+                            <td>@p.IdClienteNavigation?.Nombre @p.IdClienteNavigation?.Apellido</td>
+                            <td>@p.FechaPedido?.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td><span class="badge @bc">@p.EstadoPedido</span></td>
+                            <td>
+                                @string.Join(", ", p.DetallePedidos.Select(d => $"{d.Cantidad}x {d.IdProductoNavigation?.NombreProducto ?? "?"}"))
+                            </td>
+                            <td>@((p.MontoTotal ?? 0m).ToString("C"))</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            @* ── Paginación Bootstrap ── *@
+            @if (totalPaginas > 1)
+            {
+                <nav aria-label="Paginación historial">
+                    <ul class="pagination">
+                        <li class="page-item @(paginaActual <= 1 ? "disabled" : "")">
+                            <a class="page-link"
+                               asp-action="Index" asp-route-pagina="@(paginaActual - 1)">
+                                &laquo; Anterior
+                            </a>
+                        </li>
+                        @for (int i = 1; i <= totalPaginas; i++)
+                        {
+                            <li class="page-item @(i == paginaActual ? "active" : "")">
+                                <a class="page-link"
+                                   asp-action="Index" asp-route-pagina="@i">
+                                    @i
+                                    @if (i == paginaActual)
+                                    {
+                                        <span class="visually-hidden">(actual)</span>
+                                    }
+                                </a>
+                            </li>
+                        }
+                        <li class="page-item @(paginaActual >= totalPaginas ? "disabled" : "")">
+                            <a class="page-link"
+                               asp-action="Index" asp-route-pagina="@(paginaActual + 1)">
+                                Siguiente &raquo;
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        }
+    </div>
+}
+
+@* ── Modal de confirmación genérico ── *@
+<partial name="_ModalConfirmacionGlobal" />
+
+@* ── Toast de notificaciones ── *@
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+    <div class="toast align-items-center border-0" role="alert" id="toastExito" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body fw-bold" id="toastMensaje">Acción completada.</div>
+            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+        </div>
+    </div>
+</div>
+
+@* ── Toast SignalR (zona superior derecha) ── *@
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1200;">
+    <div class="toast align-items-center border-0 text-bg-info" role="alert" id="toastSignalR" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body fw-bold" id="toastSignalRMensaje"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // ── Variables globales para pedidos.js ──
+        window.puedeAsignar           = @(puedeAsignar ? "true" : "false");
+        window.esRepartidor           = @(esRepartidor ? "true" : "false");
+        window.disponibilidadActual   = "@disponibilidadActual";
+        window.repartidorId           = @(repartidorId?.ToString() ?? "null");
+        window.rolActual              = "@(esRepartidor ? "repartidor" : puedeAsignar ? "admin" : "vendedor")";
+        window.esAdminOSuperAdmin     = @(esAdminOSuperAdmin ? "true" : "false");
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
+    <script src="~/js/pedidos.js" asp-append-version="true"></script>
+}
+
+================

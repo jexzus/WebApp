@@ -1,116 +1,165 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+@* ============================================================ *@
+@* ARCHIVO: Views/Shared/_Layout.cshtml                        *@
+@* CAMBIOS:                                                     *@
+@*   FIX #1 → <main> con class="flex-grow-1" para Sticky Footer*@
+@*   FIX #4 → confirmarLogout() usa icon:'error' (rojo)        *@
+@* ============================================================ *@
+@using Microsoft.AspNetCore.Http
+@using Microsoft.AspNetCore.Antiforgery
+@inject IAntiforgery Xsrf
+
+<!DOCTYPE html>
+<html lang="es">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - AppWeb1</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <title>@(ViewData["Title"] ?? "AppWeb1") - Jam Burgers</title>
+    <meta name="description" content="@(ViewData["MetaDescription"] ?? "Pedidos online Jam Burgers - Santa Rosa, La Pampa")" />
+    <link rel="icon" type="image/png" href="~/favicon.png" asp-append-version="true" />
+
+    @* === ANTIFORGERY TOKEN PARA JAVASCRIPT === *@
+    @{
+        var tokens = Xsrf.GetAndStoreTokens(Context);
+    }
+    <meta name="request-verification-token" content="@tokens.RequestToken" />
+
+    <environment include="Development">
+        <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    </environment>
+    <environment exclude="Development">
+        <link rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css"
+              crossorigin="anonymous" referrerpolicy="no-referrer" />
+    </environment>
+
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/AppWeb1.styles.css" asp-append-version="true" />
-
-    <!-- FontAwesome para íconos (si seguís usándolos en otras partes) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-yfD7UBn4p91xqzOTyMYR7Hjkg+4q6lqOZ+us2e9kHXulJ+aLr4rRJlUu1G4VtLG+aUtLcm65WSB9U1DcWFoE1g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-
-    <style>
-        body {
-            background: url('/imagenes/fondoweb.jpg') no-repeat center center fixed;
-            background-size: cover;
-            background-color: #fffbe6;
-        }
-
-        .btn-primary {
-            background-color: #ff9800;
-            border-color: #e68900;
-        }
-
-        .btn-danger {
-            background-color: #e53935;
-            border-color: #c62828;
-        }
-
-        .btn-warning {
-            background-color: #ffc107;
-            border-color: #ffb300;
-        }
-
-        .navbar {
-            background: linear-gradient(to right, #ff9800, #ff5722);
-        }
-
-            .navbar .nav-link {
-                color: #fff !important;
-                font-weight: bold;
-            }
-
-        footer {
-            background: rgba(255, 255, 255, 0.7);
-        }
-
-        /* 🔒 Estilo botón logout */
-        .logout-fab {
-            z-index: 1050;
-        }
-
-            .logout-fab img:hover {
-                transform: scale(1.1);
-                transition: transform 0.2s ease-in-out;
-            }
-    </style>
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     @await RenderSectionAsync("Styles", required: false)
 </head>
-<body>
-    @* 🔐 Solo mostrar si hay usuario logueado *@
-    @{
-        var usuarioLogueado = Context.Session.GetString("Usuario");
-    }
+
+@{
+    var bodyClass        = (ViewContext.RouteData.Values["action"]?.ToString() == "Login") ? "login-page" : string.Empty;
+    var isSessionReady   = Context?.Session?.IsAvailable ?? false;
+    var usuarioLogueado  = isSessionReady ? Context!.Session.GetString("Usuario") : null;
+
+    var tdSuccess = TempData["Success"] as string;
+    var tdError   = TempData["Error"]   as string;
+
+    var jsonSuccess = System.Text.Json.JsonSerializer.Serialize(tdSuccess ?? "");
+    var jsonError   = System.Text.Json.JsonSerializer.Serialize(tdError   ?? "");
+}
+<body class="@bodyClass">
+
+    <header>
+        @* tu header si aplica *@
+    </header>
 
     @if (!string.IsNullOrEmpty(usuarioLogueado))
     {
-        <!-- 🔒 Botón logout flotante -->
-        <div class="logout-fab position-fixed" style="top: 1px; right: 50px;">
-          <img src="~/imagenes/logout.png" alt="Salir" style="width: 45px; height: 45px; cursor: pointer;" onclick="confirmarLogout()" />
-        </div>
+        <form id="logoutForm" asp-area="" asp-controller="Usuario" asp-action="LogoutPost" method="post" style="display:none;"></form>
+
+        <button type="button"
+                class="btn btn-link p-0 position-fixed logout-fab"
+                style="top: 1px; right: 50px;"
+                aria-label="Cerrar sesión"
+                onclick="confirmarLogout()">
+            <img src="~/imagenes/logout.png" alt="Cerrar sesión" style="width:45px;height:45px;" loading="lazy" />
+        </button>
     }
 
-    <header></header>
-
-    <div class="container">
+    @*
+        FIX #1 — STICKY FOOTER
+        Se agrega "flex-grow-1" al div.container que envuelve el <main>.
+        Con el body en display:flex + flex-direction:column (definido en site.css),
+        este div crece para llenar el espacio disponible y empuja el footer al fondo.
+    *@
+    <div class="container flex-grow-1">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
+    @*
+        FIX #1 — STICKY FOOTER + text-center
+        Se agrega "text-center" directamente en el <footer>.
+        El resto del estilo (padding, background, etc.) viene de site.css.
+    *@
+    <footer class="border-top footer text-muted text-center">
         <div class="container">
-            &copy; 2025 - Jam Burgers, Santa Rosa, La Pampa. By Raiburn Jesús (JXZ) - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            &copy; 2025 - Jam Burgers, Santa Rosa, La Pampa. By Raiburn Jesús (JXZ) -
+            <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
     </footer>
 
-    <!-- Scripts -->
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    @* ── Toast container global (usado por notificaciones.js) ── *@
+    <div id="jamToastContainer"
+         class="toast-container position-fixed top-0 end-0 p-3"
+         style="z-index: 1090;"
+         aria-live="polite"
+         aria-atomic="false">
+    </div>
 
-    <!-- 🔒 Confirmación logout -->
+    @* ── Scripts base ── *@
+    <environment include="Development">
+        <script src="~/lib/jquery/dist/jquery.min.js" defer></script>
+        <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js" defer></script>
+    </environment>
+    <environment exclude="Development">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js" defer></script>
+    </environment>
+
+    @* ── SweetAlert2 global ── *@
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
+
+    @* ── Sistema de notificaciones unificado ── *@
+    <script src="~/js/notificaciones.js" asp-append-version="true" defer></script>
+    <script src="~/js/site.js" asp-append-version="true" defer></script>
+
+    @* ── Lanzar notificaciones desde TempData ── *@
     <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var success = @Html.Raw(jsonSuccess);
+            var error   = @Html.Raw(jsonError);
+
+            if (success) mostrarNotificacion('success', success);
+            if (error)   mostrarNotificacion('error',   error);
+        });
+
         function confirmarLogout() {
+            if (typeof Swal === 'undefined') {
+                if (confirm('¿Cerrar sesión?')) document.getElementById('logoutForm').submit();
+                return;
+            }
             Swal.fire({
-                title: '¿Cerrar sesión?',
-                text: '¿Está seguro que desea salir?',
-                icon: 'warning',
-                showCancelButton: true,
+                title:             '¿Cerrar sesión?',
+                text:              '¿Estás seguro que querés salir?',
+                /*
+                   FIX #4 — Icono rojo (peligro/alerta)
+                   Se cambió icon:'warning' → icon:'error'
+                   SweetAlert2 pinta el ícono 'error' en rojo (#dc3545) de forma nativa.
+                   La clase CSS en site.css también fuerza el color rojo sobre 'warning'
+                   como doble garantía.
+                */
+                icon:              'error',
+                showCancelButton:  true,
                 confirmButtonText: 'Sí, cerrar sesión',
-                cancelButtonText: 'Cancelar',
+                cancelButtonText:  'Cancelar',
                 confirmButtonColor: '#d33',
-                cancelButtonColor: '#6c757d',
-                background: '#fff3cd',
-                color: '#000'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = '/Usuario/Logout';
+                cancelButtonColor:  '#6c757d',
+                /* FIX #4 — Fondo blanco puro del popup */
+                background:        '#ffffff',
+                color:             '#1a1a1a',
+                customClass: {
+                    popup:  'border border-danger shadow rounded-4',
+                    title:  'fw-bold',
                 }
+            }).then(function (r) {
+                if (r.isConfirmed) document.getElementById('logoutForm').submit();
             });
         }
     </script>

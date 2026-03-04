@@ -1,0 +1,27 @@
+System.Exception: 
+
+
+
+Welcome to QuestPDF! 👋 
+
+QuestPDF is an open-source library committed to long-term sustainability and continuous improvement. 
+
+To maintain high-quality development and support while keeping the library free for most users, we use a fair pricing model where only larger organizations help by providing necessary funding for the project. 
+
+If your organization’s annual gross revenue exceeds $1M USD, a Commercial License is required for production use (you can freely evaluate and test QuestPDF in non-production environments at no cost). In that case, please share this information with your team or management. By purchasing a license, you directly contribute to the ongoing development and reliability of QuestPDF. 
+
+For details on the license types and determining which applies to you, please visit: https://www.questpdf.com/license/ 
+
+We trust our users. To continue, no license key is needed. Instead, simply select and configure the appropriate license in your code. For example, if you qualify for the Community license, add: 
+
+> QuestPDF.Settings.License = LicenseType.Community; 
+
+Thank you for supporting QuestPDF! ❤️ By choosing the right license, you help ensure that our project remains transparent, sustainable, and continuously improving for everyone. 🚀 
+
+
+
+
+   at QuestPDF.Drawing.DocumentGenerator.ValidateLicense()
+   at QuestPDF.Drawing.DocumentGenerator.GeneratePdf(SkWriteStream stream, IDocument document)
+   at QuestPDF.Fluent.GenerateExtensions.GeneratePdf(IDocument document, Stream stream)
+   at AppWeb1.Models.ExportHelper.GenerarPdfPedidos(List`1 pedidos) in C:\Users\Jesus\Documents\ITES\3ro\PROGRAMACIÓN III WEB\WebApp\AppWeb1\Helpers\ExportHelper.cs:line 96

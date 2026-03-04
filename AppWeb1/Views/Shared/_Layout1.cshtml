@@ -1,0 +1,147 @@
+@* ============================================================ *@
+@* ARCHIVO: Views/Shared/_Layout.cshtml                        *@
+@* ============================================================ *@
+@using Microsoft.AspNetCore.Http
+@using Microsoft.AspNetCore.Antiforgery
+@inject IAntiforgery Xsrf
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@(ViewData["Title"] ?? "AppWeb1") - Jam Burgers</title>
+    <meta name="description" content="@(ViewData["MetaDescription"] ?? "Pedidos online Jam Burgers - Santa Rosa, La Pampa")" />
+    <link rel="icon" type="image/png" href="~/favicon.png" asp-append-version="true" />
+
+    @* === ANTIFORGERY TOKEN PARA JAVASCRIPT === *@
+    @{
+        var tokens = Xsrf.GetAndStoreTokens(Context);
+    }
+    <meta name="request-verification-token" content="@tokens.RequestToken" />
+
+    <environment include="Development">
+        <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    </environment>
+    <environment exclude="Development">
+        <link rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css"
+              crossorigin="anonymous" referrerpolicy="no-referrer" />
+    </environment>
+
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/AppWeb1.styles.css" asp-append-version="true" />
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+
+@{
+    var bodyClass        = (ViewContext.RouteData.Values["action"]?.ToString() == "Login") ? "login-page" : string.Empty;
+    var isSessionReady   = Context?.Session?.IsAvailable ?? false;
+    var usuarioLogueado  = isSessionReady ? Context!.Session.GetString("Usuario") : null;
+
+    var tdSuccess = TempData["Success"] as string;
+    var tdError   = TempData["Error"]   as string;
+
+    var jsonSuccess = System.Text.Json.JsonSerializer.Serialize(tdSuccess ?? "");
+    var jsonError   = System.Text.Json.JsonSerializer.Serialize(tdError   ?? "");
+}
+<body class="@bodyClass">
+
+    <header>
+        @* tu header si aplica *@
+    </header>
+
+    @if (!string.IsNullOrEmpty(usuarioLogueado))
+    {
+        <form id="logoutForm" asp-area="" asp-controller="Usuario" asp-action="LogoutPost" method="post" style="display:none;"></form>
+
+        <button type="button"
+                class="btn btn-link p-0 position-fixed logout-fab"
+                style="top: 1px; right: 50px;"
+                aria-label="Cerrar sesión"
+                onclick="confirmarLogout()">
+            <img src="~/imagenes/logout.png" alt="Cerrar sesión" style="width:45px;height:45px;" loading="lazy" />
+        </button>
+    }
+
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2025 - Jam Burgers, Santa Rosa, La Pampa. By Raiburn Jesús (JXZ) -
+            <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+    </footer>
+
+    @* ── Toast container global (usado por notificaciones.js) ── *@
+    <div id="jamToastContainer"
+         class="toast-container position-fixed top-0 end-0 p-3"
+         style="z-index: 1090;"
+         aria-live="polite"
+         aria-atomic="false">
+    </div>
+
+    @* ── Scripts base ── *@
+    <environment include="Development">
+        <script src="~/lib/jquery/dist/jquery.min.js" defer></script>
+        <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js" defer></script>
+    </environment>
+    <environment exclude="Development">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js" defer></script>
+    </environment>
+
+    @* ── SweetAlert2 global ── *@
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
+
+    @* ── Sistema de notificaciones unificado ── *@
+    <script src="~/js/notificaciones.js" asp-append-version="true" defer></script>
+    <script src="~/js/site.js" asp-append-version="true" defer></script>
+
+    @* ── Lanzar notificaciones desde TempData ── *@
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var success = @Html.Raw(jsonSuccess);
+            var error   = @Html.Raw(jsonError);
+
+            if (success) mostrarNotificacion('success', success);
+            if (error)   mostrarNotificacion('error',   error);
+        });
+
+        function confirmarLogout() {
+            if (typeof Swal === 'undefined') {
+                if (confirm('¿Cerrar sesión?')) document.getElementById('logoutForm').submit();
+                return;
+            }
+            Swal.fire({
+                title:             '¿Cerrar sesión?',
+                text:              '¿Estás seguro que querés salir?',
+                icon:              'warning',
+                showCancelButton:  true,
+                confirmButtonText: 'Sí, cerrar sesión',
+                cancelButtonText:  'Cancelar',
+                confirmButtonColor: '#d33',
+                cancelButtonColor:  '#6c757d',
+                background:        '#fff3cd',
+                color:             '#000',
+                customClass: {
+                    popup:  'border border-warning shadow-sm rounded-4',
+                    title:  'fw-bold',
+                }
+            }).then(function (r) {
+                if (r.isConfirmed) document.getElementById('logoutForm').submit();
+            });
+        }
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

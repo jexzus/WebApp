@@ -1,23 +1,22 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace AppWeb1.Models
 {
-    [Table("Usuarios")]
     public class Usuario
     {
         public int Id { get; set; }
 
-        [Required(ErrorMessage = "El nombre de usuario es obligatorio.")]
-        [StringLength(50)]
-        public string NombreUsuario { get; set; } = string.Empty;
+        [MaxLength(100)]
+        public string NombreUsuario { get; set; } = null!;
 
-        [Required(ErrorMessage = "La contraseña es obligatoria.")]
-        [StringLength(100)]
-        public string Contraseña { get; set; } = string.Empty;
+        [MaxLength(100)]
+        public string Contraseña { get; set; } = null!;
 
-        [Required]
-        [StringLength(20)]
-        public string Rol { get; set; } = "admin"; // Por defecto para este caso
+        [MaxLength(20)]
+        public string Rol { get; set; } = null!;
+
+        // ✅ NUEVO: navegación inversa para Cliente
+        public ICollection<Cliente> Clientes { get; set; } = new List<Cliente>();
     }
 }
